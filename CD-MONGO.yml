@@ -1,0 +1,68 @@
+name: CD-MONGO
+run-name: Execute Mongo Migrations
+
+# Controls when the workflow will run
+on:
+  workflow_call:
+    inputs:
+      repo_name:
+        type: string
+        required: true
+      runner_name:
+        type: string
+        required: true
+      cosmos_connectionstring:
+        type: string
+        required: true
+      tag_version:
+        type: string
+        required: true
+
+  workflow_dispatch:
+
+  # Environment variables available to all jobs and steps in this workflow
+env:
+  REPO_NAME: ${{ inputs.repo_name }}
+  SERVICE_VERSION: ${{ inputs.tag_version }}
+# A workflow run is made up of one or more jobs
+jobs:
+  apply-mongo:
+    runs-on: ${{ inputs.runner_name }}
+    env:
+      mongostring: ${{secrets[inputs.cosmos_connectionstring]}}
+    steps:
+    - name: Clean up working directory
+      uses: AutoModality/action-clean@v1
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ env.SERVICE_VERSION }}
+        repository: revenue-solutions-inc/${{ env.REPO_NAME }}
+        token: ${{ secrets.PAT }}
+
+    - name:  Install mongosh
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget gnupg
+        wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+        sudo apt-get update
+        sudo apt-get install -y mongodb-mongosh
+
+    - name: Start MongoDB
+      run: |
+        mkdir mongotemp
+        chmod 777 mongotemp
+        while IFS= read -r url || [ -n "$url" ]; do
+            env=$(echo $url | cut -d "=" -f1)
+            key=$(echo $url | cut -d "|" -f1 | cut -d "=" -f2)
+            db=$(echo $url | cut -d "|" -f2)
+            if [[ $env == "dev" ]]; then
+                echo "apply script to $db for tenant $key in $env environment"
+                cp manifests/scripts/mongo-final.js mongotemp/mongo-final.js
+                sed -i "s/dbnameplaceholder/$db/g" mongotemp/mongo-final.js
+                sed -i "s/tenantidplaceholder/\"$key\"/g" mongotemp/mongo-final.js
+                mongosh "${{env.mongostring}}" < mongotemp/mongo-final.js
+                rm -rf mongotemp/mongo-final.js
+            fi
+        done <manifests/scripts/tenants.txt
+    
