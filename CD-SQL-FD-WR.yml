@@ -1,0 +1,90 @@
+name: CD-SQL-FD-WR
+run-name: "Deploy SQL ${{inputs.project_name}} Using a Windows Runner"
+
+on:
+  workflow_call:
+    inputs:
+      azure_cloud:
+        type: string
+        default: 'azurecloud'
+        required: false
+      project_name:
+        type: string
+        required: true
+      runner_name:
+        type: string
+        required: true
+      db_server:
+        type: string
+        required: true
+      db_name:
+        type: string
+        required: true
+      azure_subscription:
+        type: string
+        required: true
+      managed_identity:
+        type: string
+        required: true
+      tenants_file:
+        type: string
+        required: true
+      sql_file:
+        type: string
+        required: true
+      azure_db_token_endpoint:
+        type: string
+        default: 'database.windows.net' #For Azure Cloud use the default, for Azure Government use: database.usgovcloudapi.net
+        required: false
+
+  workflow_dispatch:
+
+permissions:
+      id-token: write
+      contents: read
+jobs:
+  deploy-sql:
+    runs-on: ${{inputs.runner_name}}
+    env:
+      AZURE_CLOUD: ${{ inputs.azure_cloud }}
+      DB_SERVER: ${{ inputs.db_server }}
+      DB_NAME: ${{ inputs.db_name }}
+      AZURE_SUBSCRIPTION: ${{ inputs.azure_subscription }}
+      MANAGED_IDENTITY: ${{ inputs.managed_identity }}
+      TENANTS_FILE: ${{ inputs.tenants_file }}
+      sql_file: ${{ inputs.sql_file }}
+      varDebug: 1
+      varCommit: 1
+      AZURE_DB_TOKEN_ENDPOINT: ${{ inputs.azure_db_token_endpoint }}
+    steps:
+      - uses: actions/checkout@main
+      - uses: actions/checkout@v2
+        with:
+          ref: deploy-once
+          repository: revenue-solutions-inc/devops-cicd
+          token: ${{ secrets.PAT }}
+          path: cicd_files
+      - name: "Login to Azure Cloud"
+        if: ${{ env.AZURE_CLOUD == 'azurecloud' }}
+        run: |
+          az cloud set --name AzureCloud
+          az login --identity --username "${{ env.MANAGED_IDENTITY }}"
+          az account set --subscription "${{ env.AZURE_SUBSCRIPTION }}"
+      - name: "Login to Azure Government"
+        if: ${{ env.AZURE_CLOUD == 'AzureUSGovernment' }}
+        run: |
+          az cloud set --name AzureUSGovernment
+          az login --identity --username "${{ env.MANAGED_IDENTITY }}"
+          az account set --subscription "${{ env.AZURE_SUBSCRIPTION }}"
+      - name: Assign new path to the tenant list file
+        if: ${{ contains(env.TENANTS_FILE, '/') == false }}
+        run: |
+          "TENANTS_FILE=./cicd_files/tenants_ids/$env:TENANTS_FILE" >> $env:GITHUB_ENV
+      - name: "Az execute SQL command"
+        run: |
+          Write-Host "Tenants file: $env:TENANTS_FILE"
+          Get-Content ${{ env.TENANTS_FILE }} | ForEach-Object { 
+            Write-Host ">> Applying scripts for tenant: $_"
+            Write-Host "sqlcmd -S ${{ env.DB_SERVER }} -d ${{ env.DB_NAME }} --authentication-method=ActiveDirectoryManagedIdentity -U ${{ env.MANAGED_IDENTITY }} -i ${{ env.sql_file }} -v varTenant=$_,varDebug=${{ env.varDebug }},varCommit=${{ env.varCommit }}"
+            sqlcmd -S "${{ env.DB_SERVER }}" -d "${{ env.DB_NAME }}" --authentication-method=ActiveDirectoryManagedIdentity -U "${{ env.MANAGED_IDENTITY }}" -i "${{ env.sql_file }}" -v varTenant=$_,varDebug=${{ env.varDebug }},varCommit=${{ env.varCommit }}
+          }
