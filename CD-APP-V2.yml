@@ -1,0 +1,94 @@
+name: CD-WEB-APP
+run-name: Deploy App Services to any Environment
+
+# Controls when the workflow will run
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        type: string
+        required: true
+      repo_name:
+        type: string
+        required: true
+      runner_name:
+        type: string
+        required: true
+      build_number:
+        type: string
+        required: true
+      publish_profile:
+        type: string
+        required: true
+      environment_name:
+        type: string
+        required: true
+      app_name:
+        type: string
+        required: true  
+      env_filename:
+        type: string
+        required: true
+
+  workflow_dispatch:
+
+  # Environment variables available to all jobs and steps in this workflow
+env:
+  PROJECT_NAME: ${{ inputs.project_name }}
+  REPO_NAME: ${{ inputs.repo_name }}
+  BUILD_NUMBER: ${{ inputs.build_number }}
+  PUBLISH_PROFILE: ${{secrets[inputs.publish_profile]}}
+  ENVIRONMENT_NAME: ${{ inputs.environment_name }}
+  APP_NAME: ${{inputs.app_name}}
+  ENV_FILENAME: ${{ inputs.env_filename }}
+# A workflow run is made up of one or more jobs
+jobs:
+  push-deploy:
+    runs-on: ${{ inputs.runner_name }}
+    environment: 
+      name: ${{ inputs.environment_name }}
+
+    steps:
+      - name: Install GH CLI
+        uses: dev-hanz-ops/install-gh-cli-action@v0.1.0
+      - run: |
+          filename=$REPO_NAME-$BUILD_NUMBER.tar
+          if [ -f "$filename" ]; then
+            rm -rf $REPO_NAME-$BUILD_NUMBER.tar
+          fi
+      - run: |
+          gh run --repo revenue-solutions-inc/${{ env.REPO_NAME }} download -n ${{ env.REPO_NAME }}-${{ env.BUILD_NUMBER }}
+        env:
+          GH_TOKEN: ${{ secrets.ARTIFACTS_TOKEN }}
+
+      - name: Expanding Artifact
+        run: |
+          New-Item -Force -ItemType directory -Path ${{ env.REPO_NAME }}
+          tar -xvf ${{ env.REPO_NAME }}-${{ env.BUILD_NUMBER }}.tar -C ${{ env.REPO_NAME }}
+        shell: pwsh
+      - name: Replace placeholder
+        run: |
+          cd ${{ github.workspace }}\${{ env.REPO_NAME }}\
+          .\.next\standalone\replaceplaceholder.ps1 -placeholderprefix UIPLACEHOLDER_ -valuesenvfile ${{ env.ENV_FILENAME }} -targetfolder .\.next\standalone\
+        shell: pwsh
+
+      - name: 'Deploy to Azure WebApp'
+        uses: azure/webapps-deploy@v2
+        with: 
+          app-name: ${{ env.APP_NAME }}
+          publish-profile: ${{ env.PUBLISH_PROFILE }}
+          package: './${{ env.REPO_NAME }}'
+      
+  update-deployed-version:
+    needs: [push-deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update the confluence
+        uses: revenue-solutions-inc/confluence-rsi@v1
+        with:
+          service: ${{ env.PROJECT_NAME }}
+          env: ${{ env.ENVIRONMENT_NAME }}
+          version: ${{ env.BUILD_NUMBER }}
+          token: ${{ secrets.CONFLUENCE_TOKEN }}
+          connectionstring: ${{ secrets.COSMOS_CONNECTION_STRING }}
+    
