@@ -1,0 +1,157 @@
+name: CD-AKS
+run-name: Deploy Any Environment
+
+# Controls when the workflow will run
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        type: string
+        default: ''
+        required: true
+      service_version:
+        type: string
+        default: ''
+        required: true
+      environment:
+        type: string
+        default: ''
+        required: true
+
+  workflow_dispatch:
+
+  # Environment variables available to all jobs and steps in this workflow
+env:
+  REGISTRY: ghcr.io
+
+# A workflow run is made up of one or more jobs
+jobs:
+  aks-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      checks: write
+      contents: write
+      deployments: write
+      id-token: write
+      issues: write
+      discussions: read
+      packages: read
+      pages: read
+      pull-requests: read
+      repository-projects: write
+      security-events: read
+      statuses: read
+    env:
+      SERVICE_NAME: ${{ inputs.service_name }}
+      SERVICE_VERSION: ${{ inputs.service_version }}
+      ENVIRONMENT: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: deploy-once
+          repository: revenue-solutions-inc/devops-cicd
+          token: ${{ secrets.PAT }}
+          path: cicd_files
+      - name: Read deployment configuration
+        run: |
+          CONFIG_JSON=$(jq -c . < ./cicd_files/deployment_files/aks/$SERVICE_NAME.json)
+          echo "CONFIG=$CONFIG_JSON" >> $GITHUB_ENV
+          echo "BUILD_NUMBER=$(echo "$SERVICE_VERSION" | tr -d v)" >> $GITHUB_ENV
+          echo "REPO_NAME=$(echo "$CONFIG_JSON" | jq -r '.repository_name')" >> $GITHUB_ENV
+          echo "GHCR_PATH=$(echo "$CONFIG_JSON" | jq -r '.repository_path')" >> $GITHUB_ENV
+          echo "SERVICEPPAL=$(echo "$CONFIG_JSON" | jq -r --arg envi "$ENVIRONMENT" '.[$envi].azure_service_principal')" >> $GITHUB_ENV
+          echo "AZURE_CLOUD=$(echo "$CONFIG_JSON" | jq -r --arg envi "$ENVIRONMENT" '.[$envi].azure_cloud')" >> $GITHUB_ENV
+          echo "KEYVAULT_NAME=$(echo "$CONFIG_JSON" | jq -r --arg envi "$ENVIRONMENT" '.[$envi].keyvault_name')" >> $GITHUB_ENV
+          echo "CONTAINER_REGISTRY=$(echo "$CONFIG_JSON" | jq -r --arg envi "$ENVIRONMENT" '.[$envi].container_registry')" >> $GITHUB_ENV
+          echo "CONTAINER_NAME=$(echo "$CONFIG_JSON" | jq -r --arg envi "$ENVIRONMENT" '.[$envi].image_name')" >> $GITHUB_ENV
+          echo "CLUSTER_NAME=$(echo "$CONFIG_JSON" | jq -r --arg envi "$ENVIRONMENT" '.[$envi].cluster_name')" >> $GITHUB_ENV
+          echo "CLUSTER_RG=$(echo "$CONFIG_JSON" | jq -r --arg envi "$ENVIRONMENT" '.[$envi].cluster_resource_group')" >> $GITHUB_ENV
+          echo "NAMESPACE=$(echo "$CONFIG_JSON" | jq -r --arg envi "$ENVIRONMENT" '.[$envi].cluster_namespace')" >> $GITHUB_ENV
+          echo "AKS_SECRET_NAME=$(echo "$CONFIG_JSON" | jq -r --arg envi "$ENVIRONMENT" '.[$envi].aks_secret_name')" >> $GITHUB_ENV
+          echo "MANIFEST_FILE_PATH=$(echo "$CONFIG_JSON" | jq -r --arg envi "$ENVIRONMENT" '.[$envi].manifest_file')" >> $GITHUB_ENV
+          echo "PROJECT_NAME=$(echo "$CONFIG_JSON" | jq -r --arg envi "$ENVIRONMENT" '.[$envi].project_name')" >> $GITHUB_ENV
+          
+      - name: 'Login to GitHub Container Registry'
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Login to Azure Cloud
+        uses: Azure/login@v1
+        if: ${{ env.AZURE_CLOUD == 'azurecloud' }}
+        env:
+          SERVICE_PRINCIPAL: ${{ secrets[format('{0}', env.SERVICEPPAL)] }}
+        with:
+          creds: ${{ env.SERVICE_PRINCIPAL }}
+
+      - name: Login to Azure Government
+        uses: Azure/login@v1
+        if: ${{ env.AZURE_CLOUD == 'AzureUSGovernment' }}
+        env:
+          SERVICE_PRINCIPAL: ${{ secrets[format('{0}', env.SERVICEPPAL)] }}
+        with:
+          creds: ${{ env.SERVICE_PRINCIPAL }}
+          environment: 'AzureUSGovernment'
+
+      - name: Get ACR credentials from ${{ env.KEYVAULT_NAME }}
+        uses: Azure/get-keyvault-secrets@v1
+        with:
+          keyvault: ${{ env.KEYVAULT_NAME }}
+          secrets: 'ACR--USERNAME,ACR--PASSWORD'
+
+        # Connect to Azure Container registry (ACR)
+      - name: Login to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ env.ACR--USERNAME }}
+          password: ${{ env.ACR--PASSWORD }}
+
+      - name: Push ${{env.GHCR_PATH}}:v${{env.BUILD_NUMBER}} to ACR
+        run: |
+          az acr import --name ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME }} --source ${{ env.REGISTRY }}/${{env.GHCR_PATH}}:v${{env.BUILD_NUMBER}} --image ${{ env.CONTAINER_NAME }}:v${{ env.BUILD_NUMBER }} --username nrehman-rsi --password ${{ secrets.GITHUB_TOKEN }} --force
+
+      # Set the target Azure Kubernetes Service (AKS) cluster.
+      - name: 'Set k8s context'
+        uses: azure/aks-set-context@v1
+        env:
+          SERVICE_PRINCIPAL: ${{ secrets[format('{0}', env.SERVICEPPAL)] }}
+        with:
+          creds: ${{ env.SERVICE_PRINCIPAL }}
+          cluster-name: ${{ env.CLUSTER_NAME }}
+          resource-group: ${{ env.CLUSTER_RG }}
+        id: login
+
+    # Create image pull secret for ACR
+      - name: 'Create imagePullSecret'
+        uses: azure/k8s-create-secret@v1
+        with:
+            namespace: ${{ env.NAMESPACE }}
+            container-registry-url: ${{ env.CONTAINER_REGISTRY }}
+            container-registry-username: ${{ env.ACR--USERNAME }}
+            container-registry-password: ${{ env.ACR--PASSWORD }}
+            secret-name: ${{ env.AKS_SECRET_NAME }}
+
+      # Deploy app to AKS with k8s manifests
+      - name: 'Deploy v${{ env.BUILD_NUMBER }} to AKS'
+        uses: azure/k8s-deploy@v1
+        with:
+          manifests: |
+            ${{ github.workspace }}/cicd_files/deployment_files/${{ env.MANIFEST_FILE_PATH }}
+          images: ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME }}:v${{ env.BUILD_NUMBER }}
+          imagepullsecrets: ${{ env.AKS_SECRET_NAME }}
+          namespace: ${{ env.NAMESPACE }}
+
+      - name: Update the confluence
+        uses: revenue-solutions-inc/confluence-rsi@v1
+        with:
+          service: ${{ env.PROJECT_NAME }}
+          env: ${{ env.ENVIRONMENT }}
+          version: ${{ env.BUILD_NUMBER }}
+          token: ${{ secrets.CONFLUENCE_TOKEN }}
+          connectionstring: ${{ secrets.COSMOS_CONNECTION_STRING }}
+
+    
