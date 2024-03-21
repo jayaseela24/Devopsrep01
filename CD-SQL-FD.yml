@@ -1,0 +1,98 @@
+name: CD-SQL-FD
+run-name: "Deploy SQL ${{inputs.project_name}}"
+
+on:
+  workflow_call:
+    inputs:
+      azure_cloud:
+        type: string
+        default: 'azurecloud'
+        required: false
+      project_name:
+        type: string
+        required: true
+      runner_name:
+        type: string
+        required: true
+      db_server:
+        type: string
+        required: true
+      db_name:
+        type: string
+        required: true
+      azure_subscription:
+        type: string
+        required: true
+      managed_identity:
+        type: string
+        required: true
+      tenants_file:
+        type: string
+        required: true
+      sql_file:
+        type: string
+        required: true
+
+  workflow_dispatch:
+
+permissions:
+      id-token: write
+      contents: read
+jobs:
+  deploy-sql:
+    runs-on: ${{inputs.runner_name}}
+    env:
+      AZURE_CLOUD: ${{ inputs.azure_cloud }}
+      DB_SERVER: ${{ inputs.db_server }}
+      DB_NAME: ${{ inputs.db_name }}
+      AZURE_SUBSCRIPTION: ${{ inputs.azure_subscription }}
+      MANAGE_IDENTITY: ${{ inputs.managed_identity }}
+      tenants_file: ${{ inputs.tenants_file }}
+      sql_file: ${{ inputs.sql_file }}
+      varDebug: 1
+      varCommit: 1
+    steps:
+      - name: Clean up working directory
+        uses: AutoModality/action-clean@v1
+      - uses: actions/checkout@v2
+        with:
+          ref: deploy-once
+          repository: revenue-solutions-inc/devops-cicd
+          token: ${{ secrets.PAT }}
+          path: cicd_files
+      - name: "Login to Azure Cloud"
+        if: ${{ env.AZURE_CLOUD == 'azurecloud' }}
+        run: |
+          az cloud set --name AzureCloud
+          az login --identity --username "$MANAGE_IDENTITY"
+      - name: "Login to Azure Government"
+        if: ${{ env.AZURE_CLOUD == 'AzureUSGovernment' }}
+        run: |
+          az cloud set --name AzureUSGovernment
+          az login --identity --username "$MANAGE_IDENTITY"
+          az account set --subscription "$AZURE_SUBSCRIPTION"
+      - name: "Az get access token - Azure Cloud"
+        if: ${{ env.AZURE_CLOUD == 'azurecloud' }}
+        run: |
+          az account get-access-token --resource https://database.windows.net --output tsv | cut -f 1 | tr -d '\n' | iconv -f ascii -t UTF-16LE > tokenFile
+      - name: "Az get access token - Azure Government"
+        if: ${{ env.AZURE_CLOUD == 'AzureUSGovernment' }}
+        run: |
+          az account get-access-token --resource https://database.usgovcloudapi.net --output tsv | cut -f 1 | tr -d '\n' | iconv -f ascii -t UTF-16LE > tokenFile
+      - name: Assign new path to the tenant list file
+        if: ${{ contains(env.tenants_file, '/') == false }}
+        run: |
+          echo "tenants_file=./cicd_files/tenants_ids/$tenants_file" >> "$GITHUB_ENV"
+      - name: "Az execute SQL command"
+        run: |
+          # Open the input file for reading
+          echo "Tenants file: $tenants_file"
+          exec 3< "$tenants_file"
+
+          # Read each line from the input file and print it out
+          while read -u 3 line; do
+              echo ">> Applying scripts for tenant: $line"
+              sqlcmd -S $DB_SERVER -d $DB_NAME -G -P tokenFile -i $sql_file -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+          done
+          exec 3<&-
+        shell: bash
