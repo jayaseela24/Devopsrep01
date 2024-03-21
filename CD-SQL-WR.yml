@@ -1,0 +1,85 @@
+name: CD-SQL-WR
+run-name: "Deploy SQL Migrations script ${{inputs.project_name}} Using a Windows Runner"
+
+on:
+  workflow_call:
+    inputs:
+      azure_cloud:
+        type: string
+        default: 'azurecloud'
+        required: false
+      project_name:
+        type: string
+        required: true
+      runner_name:
+        type: string
+        required: true
+      db_server:
+        type: string
+        required: true
+      db_name:
+        type: string
+        required: true
+      azure_subscription:
+        type: string
+        required: true
+      managed_identity:
+        type: string
+        required: true
+      sql_files:
+        description: 'SQL script paths comma separated'
+        type: string
+        required: true
+      single_file:
+        type: string
+        default: 'false'
+        required: false
+
+  workflow_dispatch:
+
+permissions:
+      id-token: write
+      contents: read
+jobs:
+  deploy-sql:
+    runs-on: ${{inputs.runner_name}}
+    env:
+      AZURE_CLOUD: ${{ inputs.azure_cloud }}
+      DB_SERVER: ${{ inputs.db_server }}
+      DB_NAME: ${{ inputs.db_name }}
+      AZURE_SUBSCRIPTION: ${{ inputs.azure_subscription }}
+      MANAGED_IDENTITY: ${{ inputs.managed_identity }}
+      SQL_FILES: ${{ inputs.sql_files }}
+      SINGLE_FILE: ${{ inputs.single_file }}
+    steps:
+      - name: Clean up working directory
+        run: |
+          rm -Recurse ${{github.workspace}}\*
+      - uses: actions/checkout@main
+      - name: "Login to Azure Cloud"
+        if: ${{ env.AZURE_CLOUD == 'azurecloud' }}
+        run: |
+          az cloud set --name AzureCloud
+          az login --identity --username "${{ env.MANAGED_IDENTITY }}"
+          az account set --subscription "${{ env.AZURE_SUBSCRIPTION }}"
+      - name: "Login to Azure Government"
+        if: ${{ env.AZURE_CLOUD == 'AzureUSGovernment' }}
+        run: |
+          az cloud set --name AzureUSGovernment
+          az login --identity --username "${{ env.MANAGED_IDENTITY }}"
+          az account set --subscription "${{ env.AZURE_SUBSCRIPTION }}"
+      - name: "Az execute SQL command - Multiple files"
+        if: ${{ env.SINGLE_FILE == 'false' }}
+        run: |
+          Get-Content ${{ env.SQL_FILES }} | ForEach-Object { 
+            $sqlfile = $_
+            Write-Host ">> Executing file: $sqlfile"
+            sqlcmd -S "${{ env.DB_SERVER }}" -d "${{ env.DB_NAME }}" --authentication-method=ActiveDirectoryManagedIdentity -U "${{ env.MANAGED_IDENTITY }}" -i "$sqlfile"
+          }
+      - name: "Az execute SQL command - Single files"
+        if: ${{ env.SINGLE_FILE == 'true' }}
+        run: |
+          $sqlfile = ${{ env.SQL_FILES }}
+          Write-Host ">> Executing file: ${{ env.SQL_FILES }}"
+          sqlcmd -S "${{ env.DB_SERVER }}" -d "${{ env.DB_NAME }}" --authentication-method=ActiveDirectoryManagedIdentity -U "${{ env.MANAGED_IDENTITY }}" -i "${{ env.SQL_FILES }}"
+          
