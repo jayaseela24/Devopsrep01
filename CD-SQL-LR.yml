@@ -1,0 +1,96 @@
+name: CD-SQL-LR
+run-name: "Deploy ${{inputs.project_name}}'s SQL Migrations script(s) Using a Linux Runner"
+
+on:
+  workflow_call:
+    inputs:
+      azure_cloud:
+        type: string
+        default: 'azurecloud'
+        required: false
+      project_name:
+        type: string
+        required: true
+      runner_name:
+        type: string
+        required: true
+      db_server:
+        type: string
+        required: true
+      db_name:
+        type: string
+        required: true
+      azure_subscription:
+        type: string
+        required: true
+      managed_identity:
+        type: string
+        required: true
+      sql_files:
+        description: 'SQL script paths comma separated'
+        type: string
+        required: true
+      single_file:
+        type: string
+        default: 'false'
+        required: false
+
+  workflow_dispatch:
+
+permissions:
+      id-token: write
+      contents: read
+jobs:
+  deploy-sql:
+    runs-on: ${{inputs.runner_name}}
+    env:
+      AZURE_CLOUD: ${{ inputs.azure_cloud }}
+      DB_SERVER: ${{ inputs.db_server }}
+      DB_NAME: ${{ inputs.db_name }}
+      AZURE_SUBSCRIPTION: ${{ inputs.azure_subscription }}
+      MANAGED_IDENTITY: ${{ inputs.managed_identity }}
+      SQL_FILES: ${{ inputs.sql_files }}
+      SINGLE_FILE: ${{ inputs.single_file }}
+      varDebug: 1
+      varCommit: 1
+    steps:
+      - uses: actions/checkout@main
+      - name: "Login to Azure Cloud"
+        if: ${{ env.AZURE_CLOUD == 'azurecloud' }}
+        run: |
+          az cloud set --name AzureCloud
+          az login --identity --username "${{ env.MANAGED_IDENTITY }}"
+          az account set --subscription "${{ env.AZURE_SUBSCRIPTION }}"
+      - name: "Login to Azure Government"
+        if: ${{ env.AZURE_CLOUD == 'AzureUSGovernment' }}
+        run: |
+          az cloud set --name AzureUSGovernment
+          az login --identity --username "${{ env.MANAGED_IDENTITY }}"
+          az account set --subscription "${{ env.AZURE_SUBSCRIPTION }}"
+      - name: "Az get access token - Azure Cloud"
+        if: ${{ env.AZURE_CLOUD == 'azurecloud' }}
+        run: |
+          az account get-access-token --resource https://database.windows.net --output tsv | cut -f 1 | tr -d '\n' | iconv -f ascii -t UTF-16LE > tokenFile
+      - name: "Az get access token - Azure Government"
+        if: ${{ env.AZURE_CLOUD == 'AzureUSGovernment' }}
+        run: |
+          az account get-access-token --resource https://database.usgovcloudapi.net --output tsv | cut -f 1 | tr -d '\n' | iconv -f ascii -t UTF-16LE > tokenFile
+      
+      - name: "Az execute SQL command - Multiple files"
+        if: ${{ env.SINGLE_FILE == 'false' }}
+        run: |
+          # Open the input file for reading
+          echo "SQL_FILES: $SQL_FILES"
+          sqlfileslist=$(echo $SQL_FILES | tr "," "\n")
+          echo "SQL files list: $sqlfileslist"
+          for sqlfile in $sqlfileslist
+          do
+            echo "Executing SQL file: $sqlfile"
+            sqlcmd -S $DB_SERVER -d $DB_NAME -G -P tokenFile -i $sqlfile -v varDebug=$varDebug varCommit=$varCommit -I
+          done
+        shell: bash
+      - name: "Az execute SQL command - Single files"
+        if: ${{ env.SINGLE_FILE == 'true' }}
+        run: |
+          echo "Executing SQL file: $SQL_FILES"
+          sqlcmd -S $DB_SERVER -d $DB_NAME -G -P tokenFile -i $SQL_FILES -v varDebug=$varDebug varCommit=$varCommit -I
