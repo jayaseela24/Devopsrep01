@@ -1,0 +1,211 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: correspondence-deploy
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: correspondence
+  template:
+    metadata:
+      labels:
+        app: correspondence
+    spec:
+      
+      nodeSelector:
+        agentpool: aksapps
+      containers:
+        -
+          env:
+            -
+              name: ASPNETCORE_ENVIRONMENT
+              value: Development
+            
+            -
+              name: ASPNETCORE_URLS
+              value: https://+:443;http://+:80
+            -
+              name: ASPNETCORE_HTTPS_PORT
+              value: "443"
+            -
+              name: ASPNETCORE_Kestrel__Certificates__Default__Password
+              value: "Password123"
+            -
+              name: ASPNETCORE_Kestrel__Certificates__Default__Path
+              value: "/https/aspnetapp.pfx"
+            -
+              name: RPE_Authentication__AzureAuthorities__TenantManagement
+              value: https://tenantmanagement.nxg.revenuepremier.com/api/v1/tenantquery/b2c/
+            -
+              name: RPE_Authentication__AzureAuthorities__UserIdClaim
+              value: emails
+            -
+              name: RPE_Authentication__AzureAuthorities__TenantIdClaim
+              value: iss
+            -
+              name: RPE_Authentication__AzureAuthorities__UserIdClaimFlow
+              value: tfp
+            -
+              name: RPE_Authentication__AzureAuthorities__Authority
+              value: v2.0/.well-known/openid-configuration
+            -
+              name: RPE_Authentication__DefaultPolicyName
+              value: revXDefaultPolicy
+            -
+              name: RPE_Authorization__RoleManagmentPolicyCheckUri
+              value: https://rolemanagement.nxg.revenuepremier.com/api/v1/query/users/policies
+            -
+              name: RPE_Cors__AllowedMethods__0
+              value: DELETE
+            -
+              name: RPE_Cors__AllowedMethods__1
+              value: GET
+            -
+              name: RPE_Cors__AllowedMethods__2
+              value: OPTIONS
+            -
+              name: RPE_Cors__AllowedMethods__3
+              value: PATCH
+            -
+              name: RPE_Cors__AllowedMethods__4
+              value: POST
+            -
+              name: RPE_Cors__AllowedMethods__5
+              value: PUT
+            -
+              name: RPE_Cors__AllowedOrigins__0
+              value: "https://correspondencetemplatemgmt.nxg.revenuepremier.com/taskpane.html"
+            -
+              name: RPE_Cors__AllowedOrigins__1
+              value: "https://uidev.nxg.revenuepremier.com"
+            -
+              name: RPE_Cors__AllowedOrigins__2
+              value: "https://healthcheck.nxg.revenuepremier.com/"
+            -
+              name: RPE_Cors__PolicyName
+              value: AllowedRsiApplications
+            
+            -
+              name: RPE_Messaging__Enabled
+              value: "False"
+
+            - 
+              name: RPE_KeyVault__KeyVaultEndPoint
+              value: https://rsi-kv-dev-cor.vault.azure.net/
+            - 
+              name: RPE_KeyVault__Mode
+              value: AzurePublicCloud
+            - 
+              name: AZURE_TENANT_ID
+              value: ab9ac16a-a8d4-48fb-bc22-3b0f03f477dd
+
+            - 
+              name: AZURE_CLIENT_ID
+              value: a2b4d328-7def-40f0-b5cd-d46706e00fec
+
+            - 
+              name: AZURE_CLIENT_SECRET
+              value: jYO8Q~H2W~FiOopuVuA4-UCGbFEDgfPZ5HRL2cCq
+
+            - 
+              name: RPE_SnifferConfiguration__Endpoint
+              value: https://sqlapilibrariesdev.documents.azure.com:443/
+
+            - name: RPE_SnifferConfiguration__Key
+              value: yKbiAZJGce52aONJ7k2pcsrf0ugz1cjaEj89jaFzI9QgHtWPj8WXk1l1Qt5I1t1FKcuoT1cQegbURO2xssQQIw==
+
+            - name: RPE_SnifferConfiguration__DatabaseName
+              value: RequestAnalysisDatabase
+
+            - name: RPE_SnifferConfiguration__ContainerConfig__ContainerName
+              value: SnifferContainer
+
+            - name: RPE_SnifferConfiguration__ContainerConfig__PartitionKeyName
+              value: domainName
+
+            - name: RPE_SnifferConfiguration__ClaimsTypes__IssuerClaimType
+              value: iss
+
+            - name: RPE_SnifferConfiguration__ClaimsTypes__TenantIdClaimType
+              value: tid
+
+            - name: RPE_SnifferConfiguration__ClaimsTypes__UserIdClaimType
+              value: oid
+
+            - name: RPE_SnifferConfiguration__ClaimsTypes__AudienceClaimType
+              value: aud
+
+            - name: RPE_SnifferConfiguration__ClaimsTypes__ScopeClaimType
+              value: http://schemas.microsoft.com/identity/claims/scope
+
+            - name: RPE_SnifferConfiguration__ClaimsTypes__IdentityProviderClaimType
+              value: http://schemas.microsoft.com/identity/claims/identityprovider
+
+            - name: RPE_SnifferConfiguration__ClaimsTypes__TokenFlowPolicyClaimType
+              value: tfp
+
+            - name: RPE_SnifferConfiguration__ClaimsTypes__NonceClaimType
+              value: nonce
+
+            - name: RPE_SnifferConfiguration__ClaimsTypes__AuthorizedPartyClaimType
+              value: azp
+
+            - 
+              name: RPE_SnifferConfiguration__ClaimsTypes__EmailClaimType
+              value: emails
+
+          image: "devnextgen.azurecr.io/rsi.correspondence.api:0.0.1"
+          name: correspondence
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1024Mi"
+              cpu: "500m"
+          ports:
+            -
+              containerPort: 443
+              name: port443
+              protocol: TCP
+            -
+              containerPort: 80
+              name: port80
+              protocol: TCP
+          volumeMounts:
+            -
+              mountPath: /https
+              name: volume1
+            -
+              mountPath: /mnt/log
+              name: volume2
+      volumes:
+        -
+          name: volume1
+          persistentVolumeClaim:
+            claimName: nextgen-azurefile
+        -
+          name: volume2
+          persistentVolumeClaim:
+            claimName: nextgen-log-azurefile
+
+---            
+apiVersion: v1
+kind: Service
+metadata: 
+  name: correspondence-svc
+spec: 
+  ports: 
+    - 
+      name: http
+      port: 80
+      targetPort: 80
+    - 
+      name: https
+      port: 443
+      targetPort: 443
+  selector: 
+    app: correspondence
+  type: ClusterIP
