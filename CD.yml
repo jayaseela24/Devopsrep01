@@ -1,0 +1,199 @@
+name: CD
+run-name: Deploy Any Environment
+
+# Controls when the workflow will run
+on:
+  workflow_call:
+    inputs:
+      azure_cloud:
+        type: string
+        default: 'azurecloud'
+        required: false
+      project_name:
+        type: string
+        required: true
+      repo_name:
+        type: string
+        required: true
+      runner_name:
+        type: string
+        required: true
+      container_registry:
+        type: string
+        required: true
+      dockerfile_path:
+        type: string
+        required: true
+      image_name:
+        type: string
+        required: true
+      keyvault_name:
+        type: string
+        required: true
+      manifest_file_path:
+        type: string
+        required: true
+      cluster_rg:
+        type: string
+        required: true
+      cluster_name:
+        type: string
+        required: true
+      namespace:
+        type: string
+        required: true
+      build_number:
+        type: string
+        required: true
+      azure_service_principal:
+        type: string
+        required: true
+      aks_secret_name:
+        type: string
+        required: true
+      environment_name:
+        type: string
+        required: true
+      api_url:
+        type: string
+        required: false
+      ghcr_path:
+        type: string
+        required: true
+
+  workflow_dispatch:
+
+  # Environment variables available to all jobs and steps in this workflow
+env:
+  AZURE_CLOUD: ${{ inputs.azure_cloud }}
+  PROJECT_NAME: ${{ inputs.project_name }}
+  REPO_NAME: ${{ inputs.repo_name }}
+  CONTAINER_REGISTRY: ${{ inputs.container_registry }}
+  PATH_DOCKERFILE: ${{ inputs.dockerfile_path }}
+  IMAGE_NAME: ${{ inputs.image_name }}
+  CONTAINER_NAME: ${{ inputs.image_name }}
+  CLUSTER_RG: ${{ inputs.cluster_rg }}
+  CLUSTER_NAME: ${{ inputs.cluster_name }}
+  NAMESPACE: ${{ inputs.namespace }}
+  BUILD_NUMBER: ${{ inputs.build_number }}
+  SERVICE_PRINCIPAL: ${{secrets[inputs.azure_service_principal]}}
+  AKS_SECRET_NAME: ${{ inputs.aks_secret_name }}
+  KEYVAULT_NAME: ${{ inputs.keyvault_name }}
+  MANIFEST_FILE_PATH: ${{ inputs.manifest_file_path }}
+  ENVIRONMENT_NAME: ${{ inputs.environment_name }}
+  API_URL: ${{ inputs.api_url }}
+  GHCR_PATH: ${{ inputs.ghcr_path }}
+  REGISTRY: ghcr.io
+
+# A workflow run is made up of one or more jobs
+jobs:
+  push-deploy:
+    runs-on: ${{ inputs.runner_name }}
+    permissions:
+      actions: write
+      checks: write
+      contents: write
+      deployments: write
+      id-token: write
+      issues: write
+      discussions: read
+      packages: read
+      pages: read
+      pull-requests: read
+      repository-projects: write
+      security-events: read
+      statuses: read
+    environment: 
+      name: ${{ inputs.environment_name }}
+      url: 'https://${{ env.REPO_NAME }}.nxg.revenuepremier.com/swagger/index.html'
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.REPO_NAME }}-${{ env.BUILD_NUMBER }}
+
+      - name: Expanding Artifact
+        run: |
+          chmod 777 ${{ env.REPO_NAME }}-${{ env.BUILD_NUMBER }}.tar
+          mkdir -p ${{ env.REPO_NAME }}
+          chmod 777 ${{ env.REPO_NAME }}
+          tar -xvf ${{ env.REPO_NAME }}-${{ env.BUILD_NUMBER }}.tar -C ${{ env.REPO_NAME }}
+
+      - name: 'Login to GitHub Container Registry'
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Login to Azure Cloud
+        uses: Azure/login@v1
+        if: ${{ env.AZURE_CLOUD == 'azurecloud' }}
+        with:
+          creds: ${{ env.SERVICE_PRINCIPAL }}
+
+      - name: Login to Azure Government
+        uses: Azure/login@v1
+        if: ${{ env.AZURE_CLOUD == 'AzureUSGovernment' }}
+        with:
+          creds: ${{ env.SERVICE_PRINCIPAL }}
+          environment: 'AzureUSGovernment'
+
+      - name: Get ACR credentials from ${{ env.KEYVAULT_NAME }}
+        uses: Azure/get-keyvault-secrets@v1
+        with:
+          keyvault: ${{ env.KEYVAULT_NAME }}
+          secrets: 'ACR--USERNAME,ACR--PASSWORD'
+
+        # Connect to Azure Container registry (ACR)
+      - name: Login to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ env.ACR--USERNAME }}
+          password: ${{ env.ACR--PASSWORD }}
+
+      - name: Push ${{env.GHCR_PATH}}:v${{env.BUILD_NUMBER}} to ACR
+        run: |
+          az acr import --name ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME }} --source ${{ env.REGISTRY }}/${{env.GHCR_PATH}}:v${{env.BUILD_NUMBER}} --image ${{ env.CONTAINER_NAME }}:v${{ env.BUILD_NUMBER }} --username nrehman-rsi --password ${{ secrets.GITHUB_TOKEN }}
+
+      # Set the target Azure Kubernetes Service (AKS) cluster.
+      - name: 'Set k8s context'
+        uses: azure/aks-set-context@v1
+        with:
+          creds: ${{ env.SERVICE_PRINCIPAL }}
+          cluster-name: ${{ env.CLUSTER_NAME }}
+          resource-group: ${{ env.CLUSTER_RG }}
+        id: login
+
+    # Create image pull secret for ACR
+      - name: 'Create imagePullSecret'
+        uses: azure/k8s-create-secret@v1
+        with:
+            namespace: ${{ env.NAMESPACE }}
+            container-registry-url: ${{ env.CONTAINER_REGISTRY }}
+            container-registry-username: ${{ env.ACR--USERNAME }}
+            container-registry-password: ${{ env.ACR--PASSWORD }}
+            secret-name: ${{ env.AKS_SECRET_NAME }}
+
+      # Deploy app to AKS with k8s manifests
+      - name: 'Deploy v${{ env.BUILD_NUMBER }} to AKS'
+        uses: azure/k8s-deploy@v1
+        with:
+          manifests: |
+            ${{ github.workspace }}/${{ env.REPO_NAME }}/${{ env.MANIFEST_FILE_PATH }}
+          images: ${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ env.BUILD_NUMBER }}
+          imagepullsecrets: ${{ env.AKS_SECRET_NAME }}
+          namespace: ${{ env.NAMESPACE }}
+
+      - name: Update the confluence
+        uses: revenue-solutions-inc/confluence-rsi@v1
+        continue-on-error: true
+        with:
+          service: ${{ env.PROJECT_NAME }}
+          env: ${{ env.ENVIRONMENT_NAME }}
+          version: ${{ env.BUILD_NUMBER }}
+          token: ${{ secrets.CONFLUENCE_TOKEN }}
+          connectionstring: ${{ secrets.COSMOS_CONNECTION_STRING }}
+
+    
