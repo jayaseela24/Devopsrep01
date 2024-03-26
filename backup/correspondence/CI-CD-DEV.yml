@@ -1,0 +1,136 @@
+name: CI-CD-DEV
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push events but only for the develop branch
+  push:
+    branches:
+      - 'develop'
+      
+      
+      
+      
+  workflow_dispatch:
+  
+  # Environment variables available to all jobs and steps in this workflow
+env:
+  CONTAINER_REGISTRY: devnextgen.azurecr.io
+  PATH_DOCKERFILE: ./src/Rsi.Correspondence.Api/Dockerfile
+  IMAGE_NAME: rsi.correspondence.api
+  CLUSTER_RG: RSI-CE-DEV-NXG-RG
+  CLUSTER_NAME: RSI-CE-DEV-NXG-AKS
+  NAMESPACE: default
+
+# A workflow run is made up of one or more jobs 
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+    
+      # Connect to Azure Container registry (ACR)
+      - uses: azure/docker-login@v1
+        with:
+          login-server: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      # Generating and increment build number
+      - name: Generate build number
+        uses: einaregilsson/build-number@v3
+        id: buildnumber
+        with:
+          token: ${{ secrets.REPO_TOKEN }}
+
+      # Container build and push to a Azure Container Registry (ACR) 
+      - name: 'Build and push'
+        id: dev_build_publish_image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ${{ env.PATH_DOCKERFILE }}
+          tags: ${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ steps.buildnumber.outputs.build_number }}
+          push: true
+          build-args: |
+            build_profile=dev
+            FEED_ACCESSTOKEN=${{ secrets.NUGET_TOKEN }}
+
+                    
+
+      # Set the target Azure Kubernetes Service (AKS) cluster.
+      - name: 'Set k8s context'
+        uses: azure/aks-set-context@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS_DEV }}
+          cluster-name: ${{ env.CLUSTER_NAME }}
+          resource-group: ${{ env.CLUSTER_RG }}
+        id: login
+    
+  
+          
+    # Create image pull secret for ACR
+      - name: 'Create imagePullSecret'
+        uses: azure/k8s-create-secret@v1
+        with:
+            namespace: ${{ env.NAMESPACE }}
+            container-registry-url: ${{ env.CONTAINER_REGISTRY }}
+            container-registry-username: ${{ secrets.ACR_USERNAME }}
+            container-registry-password: ${{ secrets.ACR_PASSWORD }}
+            secret-name: rsidevnxgimgauth
+            
+
+      # Deploy app to AKS with k8s manifests
+      - name: 'Deploy to AKS'
+        uses: azure/k8s-deploy@v1
+        with:
+          manifests: |
+            ${{ github.workspace }}/manifests/deployment.yml
+            ${{ github.workspace }}/manifests/service.yml
+          images: ${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ steps.buildnumber.outputs.build_number }}
+          imagepullsecrets: rsidevnxgimgauth
+          namespace: ${{ env.NAMESPACE }}
+      
+      - name: 'Update correspondence sink object'
+        run: curl -X GET "https://revxdtmfa-dev-1.azurewebsites.net/api/CreateSinkObject?code=${{secrets.FUNCTION_KEY}}&url=https://correspondence.nxg.revenuepremier.com/swagger/v1/swagger.json"
+          
+
+  notification:
+    runs-on: ubuntu-latest
+    env:
+      COLOR: 28a745
+    needs: [build-push-deploy]
+    if: always()
+
+    steps: 
+      - run: |
+          $color=""
+          if ("${{ needs.build-push-deploy.result }}" -eq "success"){ $color="28a745" } else { $color="dc3545" }
+          if ("${{ needs.build-push-deploy.result }}" -eq "success"){ $condition="success" } else { $condition="failure" }
+           
+          Write-Host "Result color: $color"
+          echo "COLOR=$color" >> $env:GITHUB_ENV
+        shell: pwsh
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 50
+      # this is the new step using the ms-teams-notification actions
+      - name: Notify dedicated teams channel
+        uses: jdcargile/ms-teams-notification@v1.3
+        with:
+          github-token: ${{ github.token }} # this will use the runner's token.
+          ms-teams-webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+          notification-summary: "Github Action Build Number ${{ github.run_number }} Completed for ${{ github.repository }} and the outcome is ${{ needs.build-push-deploy.result }}."
+          notification-color: "${{env.COLOR}}"
+          timezone: America/California
+
+      - name: Send notification mail
+        uses: revenue-solutions-inc/NotificationAction@v0.23
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          build_status: ${{ needs.build-push-deploy.result }}
+          repository: ${{ github.event.repository.name }}
+          run_id: ${{ github.event.workflow_run.id }}
+          username: ${{secrets.SECRETS_MAIL_USERNAME}}
+          password: ${{secrets.SECRETS_MAIL_PASSWORD}}
+          base_ref_branch: ${{github.ref_name}}
