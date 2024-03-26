@@ -1,0 +1,103 @@
+name: release-notes
+
+on:
+  workflow_dispatch:
+    inputs:
+      services_to_deploy:
+        description: JSON string of services to deploy
+        required: true
+        type: string
+      deployment_type:
+        description: 'Deployment Type'
+        required: true
+        type: string
+      target_environment:
+        description: 'target environment'
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      services_to_deploy:
+        description: JSON string of services to deploy
+        required: true
+        type: string
+      deployment_type:
+        description: 'Deployment Type'
+        required: true
+        type: string
+      target_environment:
+        description: 'target environment'
+        required: true
+        type: string
+
+jobs:
+  process-json:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r release-notes-script/requirements.txt
+
+      - name: get Version and Create Table
+        env:
+          API_URL1: ${{ secrets.API_URL1 }}
+          CONFLUENCE_URL: ${{ secrets.CONFLUENCE_URL }}
+          BASE_URL: ${{ secrets.BASE_URL }}
+          # API_TOKEN: ${{ secrets.API_TOKEN }}
+          API_TOKEN: ${{ secrets.CONFLUENCE_API_TOKEN }}
+          USERNAME: ${{ secrets.USERNAME }}
+          PAGE_NO: ${{ secrets.PAGE_NO }}
+          SECRET_VALUE: ${{ secrets.MY_SECRET }}
+          services_to_deploy: ${{ inputs.services_to_deploy }}
+          deployment_type : ${{ inputs.deployment_type }}
+          target_environment : ${{ inputs.target_environment }}
+          
+        run: |
+          echo "json received : $services_to_deploy"
+          python release-notes-script/main.py
+          ls   
+      
+      - name: Insert Data
+        env:
+          CONFLUENCE_URL: ${{ secrets.CONFLUENCE_URL }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          USERNAME: ${{ secrets.USERNAME }}
+          SECRET_VALUE: ${{ secrets.MY_SECRET }}
+          
+        run: |
+          
+          python release-notes-script/insertdata.py
+
+      - name: Export Confluence Pdf
+        env:
+          CONFLUENCE_URL: ${{ secrets.CONFLUENCE_URL }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          USERNAME: ${{ secrets.USERNAME }}
+          SECRET_VALUE: ${{ secrets.MY_SECRET }}
+        run: |
+          python release-notes-script/exportpdf.py
+      
+      - name: Export Pdf of STL-Issue
+        run: |
+          python release-notes-script/export_STL_Issue.py
+          ls
+
+      - name: Upload Release-notes PDF
+        uses: actions/upload-artifact@v2
+        with:
+          name: release notes PDF
+          path: release_notes.pdf
+          
+      - name: test Upload STL-issue PDF
+        uses: actions/upload-artifact@v2
+        with:
+          name: STL issues PDF
+          path: STL_issues.pdf
+
+      
