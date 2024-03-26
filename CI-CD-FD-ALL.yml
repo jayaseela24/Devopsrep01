@@ -1,0 +1,165 @@
+name: CI-CD-SQL-FD-ALL
+run-name: Execute all FD scripts for all involved domains
+
+# Controls when the workflow will run
+on:
+  # push:
+  #   branches:
+  #     - deploy-once
+
+      
+
+  workflow_dispatch:
+
+  # Environment variables available to all jobs and steps in this workflow
+env:
+  AZURE_SUBSCRIPTION: 'REVX-PD-REF/SB-EA'
+  MANAGE_IDENTITY: '22e44e39-8844-4a66-9bd5-db596d3dd7c3'
+  tenants_file: './cicd_files/tenants_ids/ref_tenant_list_2.txt'
+  varDebug: 1
+  varCommit: 1
+  DB_SERVER: rfsb-revx-managed-sql-instance.96a031c3633f.database.windows.net,1433
+
+# A workflow run is made up of one or more jobs
+jobs:
+  sql-execution:
+    runs-on: rfsb-vm
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: deploy-once
+          repository: revenue-solutions-inc/devops-cicd
+          token: ${{ secrets.PAT }}
+          path: cicd_files
+      - uses: actions/checkout@v2
+        with:
+          ref: develop
+          repository: revenue-solutions-inc/contentmanagement
+          token: ${{ secrets.PAT }}
+          path: contentmanagement
+      - uses: actions/checkout@v2
+        with:
+          ref: develop
+          repository: revenue-solutions-inc/correspondence
+          token: ${{ secrets.PAT }}
+          path: correspondence
+      - uses: actions/checkout@v2
+        with:
+          ref: develop
+          repository: revenue-solutions-inc/entityaccounting
+          token: ${{ secrets.PAT }}
+          path: entityaccounting
+      - uses: actions/checkout@v2
+        with:
+          ref: develop
+          repository: revenue-solutions-inc/entitymanagement
+          token: ${{ secrets.PAT }}
+          path: entitymanagement
+      - uses: actions/checkout@v2
+        with:
+          ref: develop
+          repository: revenue-solutions-inc/formsprocessing
+          token: ${{ secrets.PAT }}
+          path: formsprocessing
+      - uses: actions/checkout@v2
+        with:
+          ref: develop
+          repository: revenue-solutions-inc/mailingservicelibrary
+          token: ${{ secrets.PAT }}
+          path: mailingservicelibrary
+      - uses: actions/checkout@v2
+        with:
+          ref: develop
+          repository: revenue-solutions-inc/platformconfigurationservice
+          token: ${{ secrets.PAT }}
+          path: platformconfigurationservice
+      - uses: actions/checkout@v2
+        with:
+          ref: develop
+          repository: revenue-solutions-inc/tenantmanagementservice
+          token: ${{ secrets.PAT }}
+          path: tenantmanagementservice
+      - uses: actions/checkout@v2
+        with:
+          ref: develop
+          repository: revenue-solutions-inc/workflowengine
+          token: ${{ secrets.PAT }}
+          path: workflowengine
+
+        # Log into Azure
+      - name: "Login to Azure Cloud"
+        run: |
+          az cloud set --name AzureCloud
+          az account set --subscription $AZURE_SUBSCRIPTION
+          az login --identity --username $MANAGE_IDENTITY
+      - name: "Az get access token"
+        run: |
+          az account get-access-token --resource https://database.windows.net --output tsv | cut -f 1 | tr -d '\n' | iconv -f ascii -t UTF-16LE > tokenFile
+      
+      - name: "Az execute SQL command"
+        run: |
+          # Open the input file for reading
+          echo "Tenants file: $tenants_file"
+          exec 3< "$tenants_file"
+
+          # Read each line from the input file and print it out
+          while read -u 3 line; do
+              echo ">> Applying scripts for tenant: $line"
+              
+              echo "====================================="
+              echo ">> Content Management  <<"
+              echo "====================================="
+              sqlcmd -S $DB_SERVER -d ref_NgPlatform -G -P tokenFile -i ./contentmanagement/src/PlatformConfiguration/FD/core_data.sql -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+              
+              echo "====================================="
+              echo ">> Correspondence  <<"
+              echo "====================================="
+              sqlcmd -S $DB_SERVER -d ref_NgPlatform -G -P tokenFile -i ./correspondence/src/PlatformConfiguration/FD/core_data.sql -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+              sqlcmd -S $DB_SERVER -d ref_NgCorrespondence -G -P tokenFile -i ./correspondence/src/Correspondence/FD/core_data.sql -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+              
+              echo "====================================="
+              echo ">> EntityAccounting  <<"
+              echo "====================================="
+              sqlcmd -S $DB_SERVER -d ref_NgPlatform -G -P tokenFile -i ./entityaccounting/src/Rsi.EntityAccounting.Data/PlatformConfiguration/FD/core_data.sql -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+              
+              echo "====================================="
+              echo ">> EntityManagement  <<"
+              echo "====================================="
+              sqlcmd -S $DB_SERVER -d ref_NgPlatform -G -P tokenFile -i ./entitymanagement/src/PlatformConfiguration/FD/core_data.sql -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+              sqlcmd -S $DB_SERVER -d ref_NgPlatform -G -P tokenFile -i ./entitymanagement/src/PlatformConfiguration/FD/seed_data.sql -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+              sqlcmd -S $DB_SERVER -d ref_NgPlatform -G -P tokenFile -i ./entitymanagement/src/PlatformConfiguration/FD/industry_codes_data.sql -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+              sqlcmd -S $DB_SERVER -d ref_NgPlatform -G -P tokenFile -i ./entitymanagement/src/PlatformConfiguration/FD/states_data.sql -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+              
+              echo "====================================="
+              echo ">> FormProcessing  <<"
+              echo "====================================="
+              sqlcmd -S $DB_SERVER -d ref_NgPlatform -G -P tokenFile -i ./formsprocessing/src/PlatformConfiguration/FD/core_data.sql -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+              
+              echo "====================================="
+              echo ">> MailingServiceLibrary  <<"
+              echo "====================================="
+              sqlcmd -S $DB_SERVER -d ref_NgPlatform -G -P tokenFile -i ./mailingservicelibrary/src/PlatformConfiguration/FD/core_data.sql -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+              
+              echo "====================================="
+              echo ">> PlatformConfigurationService  <<"
+              echo "====================================="
+              sqlcmd -S $DB_SERVER -d ref_NgPlatform -G -P tokenFile -i ./platformconfigurationservice/EnvironmentbasedDBScripts/RC4FD_Property.sql -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+              sqlcmd -S $DB_SERVER -d ref_NgPlatform -G -P tokenFile -i ./platformconfigurationservice/EnvironmentbasedDBScripts/RC4FD_Revenue.sql -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+              
+              echo "====================================="
+              echo ">> TenantManagementService  <<"
+              echo "====================================="
+              sqlcmd -S $DB_SERVER -d ref_NgPlatform -G -P tokenFile -i ./tenantmanagementservice/src/PlatformConfiguration/FD/core_data.sql -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+              
+              echo "====================================="
+              echo ">> workflowEngine  <<"
+              echo "====================================="
+              sqlcmd -S $DB_SERVER -d ref_NgPlatform -G -P tokenFile -i ./workflowengine/src/PlatformConfiguration/FD/core_data.sql -v varTenant=$line varDebug=$varDebug varCommit=$varCommit
+              
+          done
+          exec 3<&-
+        shell: bash
+
+        
+
+      
