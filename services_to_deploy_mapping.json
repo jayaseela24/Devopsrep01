@@ -1,0 +1,156 @@
+{
+  "source_environment": "STG",
+  "target_environment": "STL",
+  "deployment": {
+    "sql_migrations": "true",
+    "sql_fd": "true",
+    "aks": "true",
+    "function_app": "true"
+  },
+  "services_to_deploy": [
+    {
+      "service_name": "AddressVerification",
+      "service_repository": "https://github.com/revenue-solutions-inc/AddressVerification.git",
+      "source_version": "v69",
+      "target_version": "v69"
+    },
+    {
+      "service_name": "AuditTrailService",
+      "service_repository": "https://github.com/revenue-solutions-inc/AuditTrailService.git",
+      "source_version": "v55",
+      "target_version": "v62"
+    },
+    {
+      "service_name": "ChannelManagement",
+      "service_repository": "https://github.com/revenue-solutions-inc/ChannelManagement.git",
+      "source_version": "v383",
+      "target_version": "v370"
+    },
+    {
+      "service_name": "ContentManagement",
+      "service_repository": "https://github.com/revenue-solutions-inc/ContentManagement.git",
+      "source_version": "v114",
+      "target_version": "v114"
+    },
+    {
+      "service_name": "Conversions-ingestor",
+      "service_repository": "https://github.com/revenue-solutions-inc/Conversions-ingestor.git",
+      "source_version": "v126",
+      "target_version": "v127"
+    },
+    {
+      "service_name": "Conversions-analyzer",
+      "service_repository": "https://github.com/revenue-solutions-inc/Conversions-analyzer.git",
+      "source_version": "v126",
+      "target_version": "v127"
+    },
+    {
+      "service_name": "correspondence",
+      "service_repository": "https://github.com/revenue-solutions-inc/correspondence.git",
+      "source_version": "v249",
+      "target_version": "v247"
+    },
+    {
+      "service_name": "DataMapper",
+      "service_repository": "https://github.com/revenue-solutions-inc/DataMapper.git",
+      "source_version": "v91",
+      "target_version": "v95"
+    },
+    {
+      "service_name": "EntityAccounting",
+      "service_repository": "https://github.com/revenue-solutions-inc/EntityAccounting.git",
+      "source_version": "v778",
+      "target_version": "v761"
+    },
+    {
+      "service_name": "EntityManagement",
+      "service_repository": "https://github.com/revenue-solutions-inc/EntityManagement.git",
+      "source_version": "v322",
+      "target_version": "v322"
+    },
+    {
+      "service_name": "FormsProcessing",
+      "service_repository": "https://github.com/revenue-solutions-inc/FormsProcessing.git",
+      "source_version": "v492",
+      "target_version": "v496"
+    },
+    {
+      "service_name": "GraphqlServer",
+      "service_repository": "https://github.com/revenue-solutions-inc/GraphqlServer.git",
+      "source_version": "v1495",
+      "target_version": "v1489"
+    },
+    {
+      "service_name": "LogiX",
+      "service_repository": "https://github.com/revenue-solutions-inc/LogiX.git",
+      "source_version": "v168",
+      "target_version": "v163"
+    },
+    {
+      "service_name": "MailingServiceLibrary",
+      "service_repository": "https://github.com/revenue-solutions-inc/MailingServiceLibrary.git",
+      "source_version": "v118",
+      "target_version": "v118"
+    },
+    {
+      "service_name": "NoteService",
+      "service_repository": "https://github.com/revenue-solutions-inc/NoteService.git",
+      "source_version": "v53",
+      "target_version": "v56"
+    },
+    {
+      "service_name": "PBIEReportService",
+      "service_repository": "https://github.com/revenue-solutions-inc/PBIEReportService.git",
+      "source_version": "v92",
+      "target_version": "v88"
+    },
+    {
+      "service_name": "PlatformConfigurationService",
+      "service_repository": "https://github.com/revenue-solutions-inc/PlatformConfigurationService.git",
+      "source_version": "v165",
+      "target_version": "v165"
+    },
+    {
+      "service_name": "RevenueAccountingService",
+      "service_repository": "https://github.com/revenue-solutions-inc/RevenueAccountingService.git",
+      "source_version": "v180",
+      "target_version": "v180"
+    },
+    {
+      "service_name": "revx-online-services",
+      "service_repository": "https://github.com/revenue-solutions-inc/revx-online-services.git",
+      "source_version": "v155",
+      "target_version": "v136"
+    },
+    {
+      "service_name": "RevXUI",
+      "service_repository": "https://github.com/revenue-solutions-inc/RevXUI.git",
+      "source_version": "v1019",
+      "target_version": "v998"
+    },
+    {
+      "service_name": "RoleManagementService",
+      "service_repository": "https://github.com/revenue-solutions-inc/RoleManagementService.git",
+      "source_version": "v180",
+      "target_version": "v176"
+    },
+    {
+      "service_name": "Search",
+      "service_repository": "https://github.com/revenue-solutions-inc/Search.git",
+      "source_version": "v319",
+      "target_version": "v319"
+    },
+    {
+      "service_name": "TenantManagementService",
+      "service_repository": "https://github.com/revenue-solutions-inc/TenantManagementService.git",
+      "source_version": "v136",
+      "target_version": "v134"
+    },
+    {
+      "service_name": "workflowengine",
+      "service_repository": "https://github.com/revenue-solutions-inc/workflowengine.git",
+      "source_version": "v1124",
+      "target_version": "v1102"
+    }
+  ]
+}
