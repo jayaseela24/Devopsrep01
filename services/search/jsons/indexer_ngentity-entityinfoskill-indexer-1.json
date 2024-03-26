@@ -1,0 +1,29 @@
+{
+    "name": "ngentity-entityinfoskill-indexer-1",
+    "description": "",
+    "dataSourceName": "entityinfo",
+    "skillsetName": null,
+    "targetIndexName": "ngentity-entityinfoskill-index-1",
+    "disabled": null,
+    "schedule": null,
+    "parameters": {
+      "batchSize": 100,
+      "maxFailedItems": -1,
+      "maxFailedItemsPerBatch": null,
+      "base64EncodeKeys": null,
+      "configuration": {
+        "queryTimeout": "00:20:00",
+        "convertHighWaterMarkToRowVersion": false,
+        "disableOrderByHighWaterMarkColumn": false
+      }
+    },
+    "fieldMappings": [
+      {
+        "sourceFieldName": "EntityJsonInfo",
+        "targetFieldName": "EntityJsonInfoString"
+      }
+    ],
+    "outputFieldMappings": [],
+    "cache": null,
+    "encryptionKey": null
+  }

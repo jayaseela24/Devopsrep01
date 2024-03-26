@@ -1,0 +1,23 @@
+{
+  "name": "ngentity-entityinfo-index-4-sql-indexer-1",
+  "description": "",
+  "dataSourceName": "entityinfo",
+  "skillsetName": null,
+  "targetIndexName": "ngentity-entityinfo-index-4",
+  "disabled": null,
+  "schedule": null,
+  "parameters": {
+    "batchSize": 100,
+    "maxFailedItems": -1,
+    "maxFailedItemsPerBatch": null,
+    "base64EncodeKeys": null,
+    "configuration": {
+      "queryTimeout": "00:20:00",
+      "convertHighWaterMarkToRowVersion": false,
+      "disableOrderByHighWaterMarkColumn": false
+    }
+  },
+  "fieldMappings": [],
+  "outputFieldMappings": [],
+  "encryptionKey": null
+}

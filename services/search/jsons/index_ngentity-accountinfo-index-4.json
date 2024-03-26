@@ -1,0 +1,339 @@
+{
+  "name": "ngentity-accountinfo-index-4",
+  "defaultScoringProfile": "",
+  "fields": [
+    {
+      "name": "AccountInfoId",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": true,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": "standard.lucene",
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "PlatformConfigurationId",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": "standard.lucene",
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "EntityInfoId",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": "standard.lucene",
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "AccountType",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": "standard.lucene",
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "AccountJsonInfo",
+      "type": "Edm.ComplexType",
+      "fields": [
+        {
+          "name": "Group",
+          "type": "Collection(Edm.ComplexType)",
+          "fields": [
+            {
+              "name": "Attribute",
+              "type": "Collection(Edm.ComplexType)",
+              "fields": [
+                {
+                  "name": "AttributeName",
+                  "type": "Edm.String",
+                  "searchable": false,
+                  "filterable": false,
+                  "retrievable": true,
+                  "sortable": false,
+                  "facetable": false,
+                  "key": false,
+                  "indexAnalyzer": null,
+                  "searchAnalyzer": null,
+                  "analyzer": null,
+                  
+                  "synonymMaps": []
+                },
+                {
+                  "name": "AttributeDisplayName",
+                  "type": "Edm.String",
+                  "searchable": false,
+                  "filterable": false,
+                  "retrievable": true,
+                  "sortable": false,
+                  "facetable": false,
+                  "key": false,
+                  "indexAnalyzer": null,
+                  "searchAnalyzer": null,
+                  "analyzer": null,
+                  
+                  "synonymMaps": []
+                },
+                {
+                  "name": "AttributeValue",
+                  "type": "Edm.String",
+                  "searchable": true,
+                  "filterable": false,
+                  "retrievable": true,
+                  "sortable": false,
+                  "facetable": false,
+                  "key": false,
+                  "indexAnalyzer": null,
+                  "searchAnalyzer": null,
+                  "analyzer": "standard.lucene",
+                  
+                  "synonymMaps": []
+                }
+              ]
+            },
+            {
+              "name": "GroupName",
+              "type": "Edm.String",
+              "searchable": false,
+              "filterable": false,
+              "retrievable": true,
+              "sortable": false,
+              "facetable": false,
+              "key": false,
+              "indexAnalyzer": null,
+              "searchAnalyzer": null,
+              "analyzer": null,
+              
+              "synonymMaps": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PrimaryIdentifierType",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": "standard.lucene",
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "PrimaryIdentifier",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": "standard.lucene",
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "CommenceDate",
+      "type": "Edm.DateTimeOffset",
+      "searchable": false,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": null,
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "CeaseDate",
+      "type": "Edm.DateTimeOffset",
+      "searchable": false,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": null,
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "Status",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": "standard.lucene",
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "CreatedBy",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": null,
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "CreatedDate",
+      "type": "Edm.DateTimeOffset",
+      "searchable": false,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": null,
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "UpdatedBy",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": null,
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "UpdatedDate",
+      "type": "Edm.DateTimeOffset",
+      "searchable": false,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": null,
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "TenantId",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": "standard.lucene",
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "CorrelationId",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": null,
+      
+      "synonymMaps": []
+    },
+    {
+      "name": "AssetInfoId",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": "standard.lucene",
+      "normalizer": null,
+      "dimensions": null,
+      "vectorSearchProfile": null,
+      "synonymMaps": []
+    }
+  ],
+  "scoringProfiles": [],
+  "corsOptions": null,
+  "suggesters": [],
+  "analyzers": [],
+  "tokenizers": [],
+  "tokenFilters": [],
+  "charFilters": [],
+  "encryptionKey": null,
+  "similarity": {
+    "@odata.type": "#Microsoft.Azure.Search.BM25Similarity",
+    "k1": null,
+    "b": null
+  }
+}

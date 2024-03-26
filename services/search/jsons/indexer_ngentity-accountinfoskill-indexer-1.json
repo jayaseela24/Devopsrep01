@@ -1,0 +1,29 @@
+{
+  "name": "ngentity-accountinfoskill-indexer-1",
+  "description": null,
+  "dataSourceName": "accountinfo",
+  "skillsetName": null,
+  "targetIndexName": "ngentity-accountinfoskill-index-1",
+  "disabled": null,
+  "schedule": null,
+  "parameters": {
+    "batchSize": 100,
+    "maxFailedItems": -1,
+    "maxFailedItemsPerBatch": null,
+    "base64EncodeKeys": null,
+    "configuration": {
+      "queryTimeout": "00:20:00",
+      "convertHighWaterMarkToRowVersion": false,
+      "disableOrderByHighWaterMarkColumn": false
+    }
+  },
+  "fieldMappings": [
+    {
+      "sourceFieldName": "AccountJsonInfo",
+      "targetFieldName": "AccountJsonInfoString"
+    }
+  ],
+  "outputFieldMappings": [],
+  "cache": null,
+  "encryptionKey": null
+}

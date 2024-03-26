@@ -1,0 +1,23 @@
+{
+  "@odata.context": "https://va-03-stg-src-src.search.azure.us/$metadata#datasources/$entity",
+  "@odata.etag": "\"0x8DC324C1B2D96AC\"",
+  "name": "formsmongodbconn",
+  "description": null,
+  "type": "cosmosdb",
+  "subtype": "MongoDb",
+  "credentials": {
+    "connectionString": "AccountEndpoint=https://va-03-stg-cos-mongoapi.documents.azure.us;AccountKey=...;Database=stg_NgForms;ApiKind=MongoDb"
+  },
+  "container": {
+    "name": "FormData",
+    "query": null
+  },
+  "dataChangeDetectionPolicy": null,
+  "dataDeletionDetectionPolicy": {
+    "@odata.type": "#Microsoft.Azure.Search.SoftDeleteColumnDeletionDetectionPolicy",
+    "softDeleteColumnName": "forms.isActive",
+    "softDeleteMarkerValue": "false"
+  },
+  "encryptionKey": null,
+  "identity": null
+}

@@ -1,0 +1,24 @@
+{
+    "name": "ngentity-tabularentityinfo-index-1-sql-indexer-1",
+    "description": null,
+    "dataSourceName": "tabularenityinfoview",
+    "skillsetName": null,
+    "targetIndexName": "ngentity-tabular-entityinfo-index-1",
+    "disabled": null,
+    "schedule": null,
+    "parameters": {
+      "batchSize": 100,
+      "maxFailedItems": -1,
+      "maxFailedItemsPerBatch": null,
+      "base64EncodeKeys": null,
+      "configuration": {
+        "queryTimeout": "00:20:00",
+        "convertHighWaterMarkToRowVersion": false,
+        "disableOrderByHighWaterMarkColumn": false
+      }
+    },
+    "fieldMappings": [],
+    "outputFieldMappings": [],
+    "cache": null,
+    "encryptionKey": null
+}

@@ -1,0 +1,128 @@
+[
+    
+    {
+        "name": "DEV",
+        "kv_vault_name": "RSI-CE-SRCDEV-NXG-KVT-1",
+        "AIsearch_endpoint": "https://ngenpocazcog02.search.windows.net",
+        "AISearch_key_secret": "automation--ai--search--apikey",
+        "encription_kv_keyname": "",
+        "encription_kv_keyversion": "",
+        "encription_kv_uri": "https://RSI-CE-SRCDEV-NXG-KVT-1.vault.azure.net/",
+        "encription_access_creds_client_id": "",
+        "encription_access_creds_client_secret": "",
+        "sql_mi_connectionstring": "Database=NgEntity;ResourceId=/subscriptions/000117e3-d9eb-4084-8233-e90cd78d6149/resourceGroups/RSI-CE-DSQL-RVX-RG/providers/Microsoft.Sql/managedInstances/dev-revx-managed-sql-instance;Connection Timeout=100;",
+        "search_managed_instance_resource_id": "/subscriptions/000117e3-d9eb-4084-8233-e90cd78d6149/resourcegroups/RSI-CE-SRC-NXG-RG/providers/Microsoft.ManagedIdentity/userAssignedIdentities/RVX-CE-DEV-SRC-ID",
+        "subscription": "RSI-SOL-NGN-DEV/TEST-EA",
+        "azure_cloud": "AzureCloud",
+        "skillset": {
+            "skillset_accountinfo.json": "",
+            "skillset_assetinfo.json": "",
+            "skillset_entityinfo.json": ""
+        }
+
+    },
+    {
+        "name": "QAGOV",
+        "kv_vault_name": "VA-09-QAL-SRC-KVT-SRT",
+        "AIsearch_endpoint": "https://va-09-qal-src-src.search.azure.us",
+        "AISearch_key_secret": "automation--ai--search--apikey",
+        "encription_kv_keyname": "keyforcognitivesearch",
+        "encription_kv_keyversion": "f08f3f14677f4f77a24f09eeaa0abb9c",
+        "encription_kv_uri": "https://VA-09-QAL-SRC-KVT-SRT.vault.usgovcloudapi.net/",
+        "encription_access_creds_client_id": "automation--ai--search--encription--client--id",
+        "encription_access_creds_client_secret": "automation--ai--search--encription--client--secret",
+        "sql_mi_connectionstring": "Server=va-09-qal-smi.4b37c110a1cd.database.usgovcloudapi.net,1433;Database=NgEntity;ResourceId=/subscriptions/f13a2aec-ce3c-4a6f-92a6-70c15dfbfa05/resourceGroups/VA-09-QAL-SMI/providers/Microsoft.Sql/managedInstances/va-09-qal-smi;Connection Timeout=100;",
+        "search_managed_instance_resource_id": "/subscriptions/f13a2aec-ce3c-4a6f-92a6-70c15dfbfa05/resourcegroups/VA-09-QAL-SRC/providers/Microsoft.ManagedIdentity/userAssignedIdentities/VA-09-QAL-SRC-ID",
+        "subscription": "",
+        "azure_cloud": "AzureUSGovernment",
+        "skillset": {
+            "skillset_accountinfo.json": "",
+            "skillset_assetinfo.json": "",
+            "skillset_entityinfo.json": ""
+        }
+
+    },
+    {
+        "name": "REF",
+        "kv_vault_name": "rsi-kv-ref-src",
+        "AIsearch_endpoint": "https://ngenpocazcog02-ref.search.windows.net",
+        "AISearch_key_secret": "automation--ai--search--apikey",
+        "encription_kv_keyname": "keyforcognitivesearch",
+        "encription_kv_keyversion": "f22f77308556467cba16a35adeb5cada",
+        "encription_kv_uri": "https://rsi-kv-ref-src.vault.azure.net/",
+        "encription_access_creds_client_id": "automation--ai--search--encription--client--id",
+        "encription_access_creds_client_secret": "automation--ai--search--encription--client--secret",
+        "sql_mi_connectionstring": "Server=rfsb-revx-managed-sql-instance.96a031c3633f.database.windows.net,1433;Database=ref_NgEntity;ResourceId=/subscriptions/8e47bd63-87e3-4add-93a5-79f70a5d984d/resourceGroups/RSI-CE-RFSB-RVX-SMI-RG/providers/Microsoft.Sql/managedInstances/rfsb-revx-managed-sql-instance;Connection Timeout=100;",
+        "search_managed_instance_resource_id": "/subscriptions/8e47bd63-87e3-4add-93a5-79f70a5d984d/resourcegroups/RSI-CE-RFSB-RVX-SRC-RG/providers/Microsoft.ManagedIdentity/userAssignedIdentities/CUS-09-REF-SRC-ID",
+        "subscription": "REVX-PD-REF/SB-EA",
+        "azure_cloud": "AzureCloud",
+        "skillset": {
+            "skillset_accountinfo.json": "https://revxsrc-ref-2.azurewebsites.net/api/transform_account_json?code=enDi237s1tIcLxRXfmTegewruQZWzJ2ef0WNkLtHh7NcAzFuu3VCeg==",
+            "skillset_assetinfo.json": "https://revxsrc-ref-2.azurewebsites.net/api/transform_asset_json?code=X9cbyKcSFi3luCQq9pQ8i2QuOwD65iLZP683DyzugDxZAzFuXOVPiw==",
+            "skillset_entityinfo.json": "https://revxsrc-ref-2.azurewebsites.net/api/transform_entity_json?code=ODY56VkL5v1MdWxJC04bRLkUwawjQSFZOr5Pea95Yq8zAzFu0ROyUA=="
+        }
+
+    },
+    {
+        "name": "STG",
+        "kv_vault_name": "va-03-stg-src-kvt-srt",
+        "AIsearch_endpoint": "https://va-03-stg-src-src.search.azure.us",
+        "AISearch_key_secret": "automation--ai--search--apikey",
+        "encription_kv_keyname": "keyforcognitivesearch",
+        "encription_kv_keyversion": "c1c9f72c588d4f76b289ba34d97f23b3",
+        "encription_kv_uri": "https://va-03-stg-src-kvt-srt.vault.usgovcloudapi.net/",
+        "encription_access_creds_client_id": "automation--ai--search--encription--client--id",
+        "encription_access_creds_client_secret": "automation--ai--search--encription--client--secret",
+        "sql_mi_connectionstring": "Server=revx-va-stg-smi.76b6315c2934.database.usgovcloudapi.net,1433;Database=NgEntity;ResourceId=/subscriptions/c1c2dd5f-e575-4699-a8a6-86e258c5c516/resourceGroups/RevX-VA-STG-SMI/providers/Microsoft.Sql/managedInstances/revx-va-stg-smi;Connection Timeout=100;",
+        "search_managed_instance_resource_id": "/subscriptions/c1c2dd5f-e575-4699-a8a6-86e258c5c516/resourcegroups/VA-03-STG-SRC/providers/Microsoft.ManagedIdentity/userAssignedIdentities/VA-09-STG-SRC-ID",
+        "subscription": "RevX Staging",
+        "azure_cloud": "AzureUSGovernment",
+        "skillset": {
+            "skillset_accountinfo.json": "https://va-03-stg-src-fa-02.azurewebsites.us/api/transform_account_json?code=M7fWtlHVobgY_ukonBLKClZKlSPjzxN3gbfyxYmgMnv6AzFukHzpNg==",
+            "skillset_assetinfo.json": "https://va-03-stg-src-fa-02.azurewebsites.us/api/transform_asset_json?code=jCN8CK4m8jsTCbv-wAcW8ib8Aqxb56t1JufAm-R30T5MAzFuo7DIrA==",
+            "skillset_entityinfo.json": "https://va-03-stg-src-fa-02.azurewebsites.us/api/transform_entity_json?code=6DOmh30xRXkHqJn1jONddPm-o4Vly8fDB644OwNxX2tHAzFuhUKG7A=="
+        }
+
+    },
+    {
+        "name": "PRD",
+        "kv_vault_name": "VA-02-PRD-SRC-KVT-SRT",
+        "AIsearch_endpoint": "https://va-02-prd-src-src.search.azure.us",
+        "AISearch_key_secret": "automation--ai--search--apikey",
+        "encription_kv_keyname": "keyforcognitivesearch",
+        "encription_kv_keyversion": "d96955b471844b00a03536c70476c13d",
+        "encription_kv_uri": "https://VA-02-PRD-SRC-KVT-SRT.vault.usgovcloudapi.net/",
+        "encription_access_creds_client_id": "automation--ai--search--encription--client--id",
+        "encription_access_creds_client_secret": "automation--ai--search--encription--client--secret",
+        "sql_mi_connectionstring": "Server=revx-va-prd-smi.a4b03e087dbd.database.usgovcloudapi.net,1433;Database=NgEntity;ResourceId=/subscriptions/15597f8e-45f5-4ae7-a73a-93bc1896cbd7/resourceGroups/RevX-VA-PRD-SMI/providers/Microsoft.Sql/managedInstances/revx-va-prd-smi;Connection Timeout=100;",
+        "search_managed_instance_resource_id": "/subscriptions/15597f8e-45f5-4ae7-a73a-93bc1896cbd7/resourcegroups/VA-02-PRD-SRC/providers/Microsoft.ManagedIdentity/userAssignedIdentities/VA-09-PRD-SRC-ID",
+        "subscription": "RevX Production",
+        "azure_cloud": "AzureUSGovernment",
+        "skillset": {
+            "skillset_accountinfo.json": "https://va-02-prd-src-fa-02.azurewebsites.us/api/transform_account_json?code=IoAUwhNRJgj-XYZbXEClLUfo13DVX9nkF6fOfZe-_Q-oAzFu6eJyqA==",
+            "skillset_assetinfo.json": "https://va-02-prd-src-fa-02.azurewebsites.us/api/transform_asset_json?code=LwbFAN2PC456kAFY7I_BEwv8JTaT2cEi0K0YTftRrbdBAzFuMJNiLg==",
+            "skillset_entityinfo.json": "https://va-02-prd-src-fa-02.azurewebsites.us/api/transform_entity_json?code=bibnoVB2XXSJV1FvHRWQlCpC5bf-YBk-CPSJE2ZLNYg9AzFunqVV8w=="
+        }
+
+    },
+    {
+        "name": "STL",
+        "kv_vault_name": "va-01-stL-src-kvt-srt",
+        "AIsearch_endpoint": "https://va-01-stl-src-src.search.azure.us",
+        "AISearch_key_secret": "automation--ai--search--apikey",
+        "encription_kv_keyname": "keyforcognitivesearch1",
+        "encription_kv_keyversion": "0866691fe61448c080e8532ade053e2f",
+        "encription_kv_uri": "https://va-01-stl-src-kvt-srt.vault.usgovcloudapi.net/",
+        "encription_access_creds_client_id": "automation--ai--search--encription--client--id",
+        "encription_access_creds_client_secret": "automation--ai--search--encription--client--secret",
+        "sql_mi_connectionstring": "Server=va-01-stl-smi.f190e0b62306.database.usgovcloudapi.net,1433;Database=NgEntity;ResourceId=/subscriptions/f3099cf8-76f4-4e20-b77f-ce2440da287d/resourceGroups/VA-01-STL-SMI/providers/Microsoft.Sql/managedInstances/va-01-stl-smi;Connection Timeout=100;",
+        "search_managed_instance_resource_id": "/subscriptions/f3099cf8-76f4-4e20-b77f-ce2440da287d/resourcegroups/VA-01-STL-SRC/providers/Microsoft.ManagedIdentity/userAssignedIdentities/RVX-VA-STL-SRC-ID",
+        "subscription": "RevX STL",
+        "azure_cloud": "AzureUSGovernment",
+        "skillset": {
+            "skillset_accountinfo.json": "https://va-01-stl-src-fa-02.azurewebsites.us/api/transform_account_json?code=KbcnoEqJMs0BopHKaXnXcDQdNiTwfunNLBZ2fiFo7Zz9AzFuMq9Z7Q==",
+            "skillset_assetinfo.json": "https://va-01-stl-src-fa-02.azurewebsites.us/api/transform_asset_json?code=4LOSKi7iKPNcT-mfvuT1gHtkX_14J2sVgdEKqCv_tHcLAzFuOg68cA==",
+            "skillset_entityinfo.json": "https://va-01-stl-src-fa-02.azurewebsites.us/api/transform_entity_json?code=xoLniR1_msngSAhx81QaTVLK51LuYfguLoq7ud93vtYRAzFukFUuDw=="
+        }
+    }
+]

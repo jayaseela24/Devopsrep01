@@ -1,0 +1,29 @@
+{
+    "name": "ngentity-assetinfoskill-indexer-1",
+    "description": "",
+    "dataSourceName": "assetinfo",
+    "skillsetName": null,
+    "targetIndexName": "ngentity-assetinfoskill-index-1",
+    "disabled": null,
+    "schedule": null,
+    "parameters": {
+      "batchSize": 100,
+      "maxFailedItems": -1,
+      "maxFailedItemsPerBatch": null,
+      "base64EncodeKeys": null,
+      "configuration": {
+        "queryTimeout": "00:20:00",
+        "convertHighWaterMarkToRowVersion": false,
+        "disableOrderByHighWaterMarkColumn": false
+      }
+    },
+    "fieldMappings": [
+      {
+        "sourceFieldName": "AssetJsonInfo",
+        "targetFieldName": "AssetJsonInfoString"
+      }
+    ],
+    "outputFieldMappings": [],
+    "cache": null,
+    "encryptionKey": null
+  }

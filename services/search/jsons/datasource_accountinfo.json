@@ -1,0 +1,23 @@
+{
+  "name": "accountinfo",
+  "description": null,
+  "type": "azuresql",
+  "subtype": null,
+  "credentials": {
+    "connectionString": null
+  },
+  "container": {
+    "name": "[AccountInfo]",
+    "query": ""
+  },
+  "identity" : { 
+    "@odata.type": "#Microsoft.Azure.Search.DataUserAssignedIdentity",
+    "userAssignedIdentity" : null
+  },
+  "dataChangeDetectionPolicy": {
+    "@odata.type": "#Microsoft.Azure.Search.HighWaterMarkChangeDetectionPolicy",
+    "highWaterMarkColumnName": "UpdatedDate"
+  },
+  "dataDeletionDetectionPolicy": null,
+  "encryptionKey": null
+}

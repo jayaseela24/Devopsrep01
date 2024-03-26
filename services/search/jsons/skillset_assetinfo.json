@@ -1,0 +1,37 @@
+{
+    "name": "assetinfo-skillset",
+    "description": "Transform Asset json into a searchable json",
+    "skills": [
+      {
+        "@odata.type": "#Microsoft.Skills.Custom.WebApiSkill",
+        "name": "AssetJsonInfoConverter",
+        "description": "Transform Asset json into a searchable json",
+        "context": "/document",
+        "uri": null,
+        "httpMethod": "POST",
+        "timeout": "PT30S",
+        "batchSize": 1,
+        "degreeOfParallelism": 1,
+        "inputs": [
+          {
+            "name": "AssetJsonInfo",
+            "source": "/document/AssetJsonInfo"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "AssetJsonInfoConverted",
+            "targetName": "AssetJsonInfoConverted"
+          }
+        ],
+        "httpHeaders": {}
+      }
+    ],
+    "cognitiveServices": {
+      "@odata.type": "#Microsoft.Azure.Search.DefaultCognitiveServices",
+      "description": null
+    },
+    "knowledgeStore": null,
+    "indexProjections": null,
+    "encryptionKey": null
+  }
