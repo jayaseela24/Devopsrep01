@@ -1,0 +1,128 @@
+run-name: CI-CD-DEV
+
+# Controls when the workflow will run
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        type: string
+        required: true
+      dockerfile_path:
+        type: string
+        required: true
+      image_name:
+        type: string
+        required: true
+      keyvault_name:
+        type: string
+        required: true
+      manifest_file_path:
+        type: string
+        required: true
+
+  workflow_dispatch:
+
+  # Environment variables available to all jobs and steps in this workflow
+env:
+  CONTAINER_REGISTRY: devnextgen.azurecr.io
+  PATH_DOCKERFILE: ${{ inputs.dockerfile_path }}
+  IMAGE_NAME: ${{ inputs.image_name }}
+  CLUSTER_RG: RSI-CE-DEV-NXG-RG
+  CLUSTER_NAME: RSI-CE-DEV-NXG-AKS
+  NAMESPACE: default
+
+# A workflow run is made up of one or more jobs
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: [ '6.0.x' ]
+    steps:
+    - uses: actions/checkout@master
+    - uses: Azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS_DEV }}
+
+    - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ matrix.dotnet-version }}
+
+    - name: Install dependencies
+      run: |
+        dotnet nuget add source --username USERNAME --password ${{ secrets.NUGET_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/revenue-solutions-inc/index.json"
+        dotnet restore Rsi.FormsProcessing.sln
+
+    - name: Build
+      run: |
+        dotnet build --configuration Release --no-restore
+
+    - name: Test
+      run: dotnet test Rsi.FormsProcessing.sln --no-restore --configuration Release /p:CollectCoverage=true --results-directory:TestResults --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+
+
+
+
+  #     # Connect to Azure Container registry (ACR)
+  #   - uses: azure/docker-login@v1
+  #     with:
+  #       login-server: ${{ env.CONTAINER_REGISTRY }}
+  #         username: ${{ secrets.ACR_USERNAME }}
+  #         password: ${{ secrets.ACR_PASSWORD }}
+
+  #   # Generating and increment build number
+  #   - name: Generate build number
+  #     id: buildnumber
+  #     uses: onyxmueller/build-tag-number@v1
+  #     with:
+  #       token: ${{ secrets.GITHUB_TOKEN }}
+  #       prefix: dev
+
+  #   # Container build and push to a Azure Container Registry (ACR)
+  #   - name: 'Build and push'
+  #     id: dev_build_publish_image
+  #     uses: docker/build-push-action@v2
+  #     with:
+  #       context: .
+  #       file: ${{ env.PATH_DOCKERFILE }}
+  #       tags: ${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ steps.buildnumber.outputs.build_number }}
+  #       push: true
+  #       build-args: |
+  #         build_profile=dev
+  #         FEED_ACCESSTOKEN= ${{ secrets.NUGET_TOKEN }}
+
+
+  #   # Set the target Azure Kubernetes Service (AKS) cluster.
+  #   - name: 'Set k8s context'
+  #     uses: azure/aks-set-context@v1
+  #     with:
+  #       creds: ${{ secrets.AZURE_CREDENTIALS_DEV }}
+  #       cluster-name: ${{ env.CLUSTER_NAME }}
+  #       resource-group: ${{ env.CLUSTER_RG }}
+  #     id: login
+
+
+
+  # # Create image pull secret for ACR
+  #   - name: 'Create imagePullSecret'
+  #     uses: azure/k8s-create-secret@v1
+  #     with:
+  #         namespace: ${{ env.NAMESPACE }}
+  #         container-registry-url: ${{ env.CONTAINER_REGISTRY }}
+  #         container-registry-username: ${{ secrets.ACR_USERNAME }}
+  #         container-registry-password: ${{ secrets.ACR_PASSWORD }}
+  #         secret-name: rsidevnxgimgauth
+
+
+  #   # Deploy app to AKS with k8s manifests
+  #   - name: 'Deploy to AKS'
+  #     uses: azure/k8s-deploy@v1
+  #     with:
+  #       manifests: |
+  #         ${{ github.workspace }}/manifests/deployment.yml
+  #         ${{ github.workspace }}/manifests/service.yml
+  #       images: ${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ steps.buildnumber.outputs.build_number }}
+  #       imagepullsecrets: rsidevnxgimgauth
+  #       namespace: ${{ env.NAMESPACE }}
