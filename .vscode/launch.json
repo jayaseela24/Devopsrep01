@@ -1,0 +1,114 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Partial Deployment",
+            "type": "python",
+            "request": "launch",
+            "program": "./Actions/revx-services-deployment/revx-deployment.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env":{
+                "GITHUBTOKEN": "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",
+                "DEBUG": "1",
+                "COMMIT": "1",
+                "SERVICES_TO_DEPLOY_JSON": "{\"source_environment\":\"DEV\",\"target_environment\":\"DEV\",\"deployment\":{\"sql_migrations\":\"false\",\"sql_fd\":\"false\",\"aks\":\"true\",\"function_app\":\"true\"},\"services_to_deploy\":[{\"service_name\":\"AddressVerification\",\"service_repository\":\"https://github.com/revenue-solutions-inc/AddressVerification.git\",\"source_version\":\"v51\",\"target_version\":\"v51\"},{\"service_name\":\"AuditTrailService\",\"service_repository\":\"https://github.com/revenue-solutions-inc/AuditTrailService.git\",\"source_version\":\"v55\",\"target_version\":\"v55\"},{\"service_name\":\"BatchDeposit\",\"service_repository\":\"https://github.com/revenue-solutions-inc/BatchDeposit.git\",\"source_version\":\"v16\",\"target_version\":\"v16\"},{\"service_name\":\"ChannelManagement\",\"service_repository\":\"https://github.com/revenue-solutions-inc/ChannelManagement.git\",\"source_version\":\"v316\",\"target_version\":\"v316\"}]}"
+            }
+        },
+        {
+            "name": "Full Deployment",
+            "type": "python",
+            "request": "launch",
+            "program": "./Actions/revx-services-deployment/revx-deployment.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env":{
+                "GITHUBTOKEN": "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",
+                "DEBUG": "1",
+                "COMMIT": "1",
+                "SERVICES_TO_DEPLOY_JSON": "{\"source_environment\":\"DEV\",\"target_environment\":\"DEV\",\"deployment\":{\"sql_migrations\":\"true\",\"sql_fd\":\"true\",\"aks\":\"true\",\"function_app\":\"true\"},\"services_to_deploy\":[{\"service_name\":\"AddressVerification\",\"service_repository\":\"https://github.com/revenue-solutions-inc/AddressVerification.git\",\"source_version\":\"v51\",\"target_version\":\"v51\"},{\"service_name\":\"AuditTrailService\",\"service_repository\":\"https://github.com/revenue-solutions-inc/AuditTrailService.git\",\"source_version\":\"v55\",\"target_version\":\"v55\"},{\"service_name\":\"BatchDeposit\",\"service_repository\":\"https://github.com/revenue-solutions-inc/BatchDeposit.git\",\"source_version\":\"v16\",\"target_version\":\"v16\"},{\"service_name\":\"ChannelManagement\",\"service_repository\":\"https://github.com/revenue-solutions-inc/ChannelManagement.git\",\"source_version\":\"v316\",\"target_version\":\"v316\"},{\"service_name\":\"ContentManagement\",\"service_repository\":\"https://github.com/revenue-solutions-inc/ContentManagement.git\",\"source_version\":\"v99\",\"target_version\":\"v99\"},{\"service_name\":\"Conversions\",\"service_repository\":\"https://github.com/revenue-solutions-inc/Conversions.git\",\"source_version\":\"v109\",\"target_version\":\"v109\"},{\"service_name\":\"correspondence\",\"service_repository\":\"https://github.com/revenue-solutions-inc/correspondence.git\",\"source_version\":\"v213\",\"target_version\":\"v213\"},{\"service_name\":\"DataMapper\",\"service_repository\":\"https://github.com/revenue-solutions-inc/DataMapper.git\",\"source_version\":\"v69\",\"target_version\":\"v69\"},{\"service_name\":\"EntityAccounting\",\"service_repository\":\"https://github.com/revenue-solutions-inc/EntityAccounting.git\",\"source_version\":\"v628\",\"target_version\":\"v628\"},{\"service_name\":\"EntityManagement\",\"service_repository\":\"https://github.com/revenue-solutions-inc/EntityManagement.git\",\"source_version\":\"v257\",\"target_version\":\"v257\"},{\"service_name\":\"FormsProcessing\",\"service_repository\":\"https://github.com/revenue-solutions-inc/FormsProcessing.git\",\"source_version\":\"v436\",\"target_version\":\"v436\"},{\"service_name\":\"GraphqlServer\",\"service_repository\":\"https://github.com/revenue-solutions-inc/GraphqlServer.git\",\"source_version\":\"v1440\",\"target_version\":\"v1440\"},{\"service_name\":\"LogiX\",\"service_repository\":\"https://github.com/revenue-solutions-inc/LogiX.git\",\"source_version\":\"v135\",\"target_version\":\"v135\"},{\"service_name\":\"MailingServiceLibrary\",\"service_repository\":\"https://github.com/revenue-solutions-inc/MailingServiceLibrary.git\",\"source_version\":\"v108\",\"target_version\":\"v108\"},{\"service_name\":\"NoteService\",\"service_repository\":\"https://github.com/revenue-solutions-inc/NoteService.git\",\"source_version\":\"v51\",\"target_version\":\"v51\"},{\"service_name\":\"PBIEReportService\",\"service_repository\":\"https://github.com/revenue-solutions-inc/PBIEReportService.git\",\"source_version\":\"v73\",\"target_version\":\"v73\"},{\"service_name\":\"PlatformConfigurationService\",\"service_repository\":\"https://github.com/revenue-solutions-inc/PlatformConfigurationService.git\",\"source_version\":\"v153\",\"target_version\":\"v153\"},{\"service_name\":\"RevenueAccountingService\",\"service_repository\":\"https://github.com/revenue-solutions-inc/RevenueAccountingService.git\",\"source_version\":\"v154\",\"target_version\":\"v154\"},{\"service_name\":\"revx-online-services\",\"service_repository\":\"https://github.com/revenue-solutions-inc/revx-online-services.git\",\"source_version\":\"v96\",\"target_version\":\"v96\"},{\"service_name\":\"RevXUI\",\"service_repository\":\"https://github.com/revenue-solutions-inc/RevXUI.git\",\"source_version\":\"v843\",\"target_version\":\"v843\"},{\"service_name\":\"RoleManagementService\",\"service_repository\":\"https://github.com/revenue-solutions-inc/RoleManagementService.git\",\"source_version\":\"v132\",\"target_version\":\"v132\"},{\"service_name\":\"Search\",\"service_repository\":\"https://github.com/revenue-solutions-inc/Search.git\",\"source_version\":\"v285\",\"target_version\":\"v285\"},{\"service_name\":\"SnifferStoreService\",\"service_repository\":\"https://github.com/revenue-solutions-inc/SnifferStoreService.git\",\"source_version\":\"v2\",\"target_version\":\"v2\"},{\"service_name\":\"TenantManagementService\",\"service_repository\":\"https://github.com/revenue-solutions-inc/TenantManagementService.git\",\"source_version\":\"v127\",\"target_version\":\"v127\"},{\"service_name\":\"workflowengine\",\"service_repository\":\"https://github.com/revenue-solutions-inc/workflowengine.git\",\"source_version\":\"v1041\",\"target_version\":\"v1041\"}]}"
+            }
+        },
+        {
+            "name": "Generate Pre-Deployment Input",
+            "type": "python",
+            "request": "launch",
+            "program": "./Scripts/confluencerestapi.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Get Workflow Status",
+            "type": "python",
+            "request": "launch",
+            "program": "./Scripts/get_workflow_status.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env":{
+                "GITHUBTOKEN": "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",
+                "SMOKETEST_RUN_ID": "1",
+            }
+        },
+        {
+            "name": "Get Deployment Data",
+            "type": "python",
+            "request": "launch",
+            "program": "./Scripts/get_deployment_data.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env":{
+                "SERVICES": "[{'service_name':'FormsProcessing','service_repository':'https://github.com/revenue-solutions-inc/FormsProcessing.git','source_version':'v476','target_version':'v505'},{'service_name':'PlatformConfigurationService','service_repository':'https://github.com/revenue-solutions-inc/PlatformConfigurationService.git','source_version':'v165','target_version':'v165'},{'service_name':'AddressVerification','service_repository':'https://github.com/revenue-solutions-inc/AddressVerification.git','source_version':'v65','target_version':'v69'},{'service_name':'Search','service_repository':'https://github.com/revenue-solutions-inc/Search.git','source_version':'v318','target_version':'v318'},{'service_name':'revx-online-services','service_repository':'https://github.com/revenue-solutions-inc/revx-online-services.git','source_version':'v136','target_version':'v170'},{'service_name':'RevXUI','service_repository':'https://github.com/revenue-solutions-inc/RevXUI.git','source_version':'v958','target_version':'v1025'},{'service_name':'PBIEReportService','service_repository':'https://github.com/revenue-solutions-inc/PBIEReportService.git','source_version':'v76','target_version':'v92'},{'service_name':'ContentManagement','service_repository':'https://github.com/revenue-solutions-inc/ContentManagement.git','source_version':'v110','target_version':'v126'},{'service_name':'NoteService','service_repository':'https://github.com/revenue-solutions-inc/NoteService.git','source_version':'v53','target_version':'v60'},{'service_name':'RoleManagementService','service_repository':'https://github.com/revenue-solutions-inc/RoleManagementService.git','source_version':'v172','target_version':'v176'},{'service_name':'correspondence','service_repository':'https://github.com/revenue-solutions-inc/correspondence.git','source_version':'v241','target_version':'v253'},{'service_name':'DataMapper','service_repository':'https://github.com/revenue-solutions-inc/DataMapper.git','source_version':'v87','target_version':'v91'},{'service_name':'EntityManagement','service_repository':'https://github.com/revenue-solutions-inc/EntityManagement.git','source_version':'v312','target_version':'v329'},{'service_name':'RevenueAccountingService','service_repository':'https://github.com/revenue-solutions-inc/RevenueAccountingService.git','source_version':'v175','target_version':'v177'},{'service_name':'TenantManagementService','service_repository':'https://github.com/revenue-solutions-inc/TenantManagementService.git','source_version':'v133','target_version':'v140'},{'service_name':'EntityAccounting','service_repository':'https://github.com/revenue-solutions-inc/EntityAccounting.git','source_version':'v803','target_version':'v804'},{'service_name':'ChannelManagement','service_repository':'https://github.com/revenue-solutions-inc/ChannelManagement.git','source_version':'v349','target_version':'v398'},{'service_name':'GraphqlServer','service_repository':'https://github.com/revenue-solutions-inc/GraphqlServer.git','source_version':'v1475','target_version':'v1499'},{'service_name':'MailingServiceLibrary','service_repository':'https://github.com/revenue-solutions-inc/MailingServiceLibrary.git','source_version':'v113','target_version':'v120'},{'service_name':'AuditTrailService','service_repository':'https://github.com/revenue-solutions-inc/AuditTrailService.git','source_version':'v55','target_version':'v68'},{'service_name':'LogiX','service_repository':'https://github.com/revenue-solutions-inc/LogiX.git','source_version':'v148','target_version':'v163'},{'service_name':'WorkflowEngine','service_repository':'https://github.com/revenue-solutions-inc/WorkflowEngine.git','source_version':'v1102','target_version':'v1127'}]",
+                "ENVIRONMENT": "STG"
+            }
+        },
+        {
+            "name": "Get Messages from Queue",
+            "type": "python",
+            "request": "launch",
+            "program": "./Scripts/getmessagesfromqueue.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env":{
+            }
+        },
+        {
+            "name": "Send Messages to Queue",
+            "type": "python",
+            "request": "launch",
+            "program": "./Scripts/send_message_to_queue.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env":{
+                "SERVICEBUS_CONNECTION_STR":"Endpoint=sb://revx-msl-service-bus-dev.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=5YAzeVc/hNSldrP/8CJZ4uSPw+4/MXdZZ+ASbCefYm8=",
+                "SERVICEBUS_QUEUE_NAME": "cnv-debug-test"
+            }
+        },
+        {
+            "name": "Send Messages to DLQ",
+            "type": "python",
+            "request": "launch",
+            "program": "./Scripts/send_messages_to_deadletterqueue.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env":{
+                "SERVICEBUS_CONNECTION_STR":"Endpoint=sb://revx-msl-service-bus-dev.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=5YAzeVc/hNSldrP/8CJZ4uSPw+4/MXdZZ+ASbCefYm8=",
+                "SERVICEBUS_QUEUE_NAME": "cnv-debug-test"
+            }
+        },
+        {
+            "name": "Clear Messages in Queue",
+            "type": "python",
+            "request": "launch",
+            "program": "./Scripts/clear_queues.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env":{
+                "SERVICEBUS_CONNECTION_STR":"Endpoint=sb://revx-msl-service-bus-dev.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=5YAzeVc/hNSldrP/8CJZ4uSPw+4/MXdZZ+ASbCefYm8=",
+                "SERVICEBUS_QUEUE_NAME": "cnv-debug-test"
+            }
+        }
+    ]
+}
