@@ -1,0 +1,104 @@
+run-name: CI-CD-SBX
+
+# Controls when the workflow will run
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        type: string
+        required: true
+      dockerfile_path:
+        type: string
+        required: true
+      image_name:
+        type: string
+        required: true
+      keyvault_name:
+        type: string
+        required: true
+      manifest_file_path:
+        type: string
+        required: true
+
+  workflow_dispatch:
+
+  # Environment variables available to all jobs and steps in this workflow
+env:
+  CONTAINER_REGISTRY: sbxrevx.azurecr.io
+  PATH_DOCKERFILE: ${{ inputs.dockerfile_path }}
+  IMAGE_NAME: ${{ inputs.image_name }}
+  CLUSTER_RG: RSI-CE-SBX-RVX-AKS-RG
+  CLUSTER_NAME: RSI-CE-SBX-RVX-AKS
+  NAMESPACE: default
+
+# A workflow run is made up of one or more jobs
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - uses: Azure/login@v1
+      with:
+        creds: ${{ secrets.SBX_AZURE_CREDENTIALS }}
+
+    - uses: Azure/get-keyvault-secrets@v1
+      with:
+        keyvault: ${{ inputs.keyvault_name }}
+        secrets: 'SBX--ACR--USERNAME,SBX--ACR--PASSWORD'
+
+      # Connect to Azure Container registry (ACR)
+    - uses: azure/docker-login@v1
+      with:
+        login-server: ${{ env.CONTAINER_REGISTRY }}
+        username: ${{ env.SBX--ACR--USERNAME }}
+        password: ${{ env.SBX--ACR--PASSWORD }}
+
+    # Generating and increment build number
+    - name: Generate build number
+      id: buildnumber
+      uses: onyxmueller/build-tag-number@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        prefix: sbx
+
+    # Container build and push to a Azure Container Registry (ACR)
+    - name: 'Build and push'
+      id: dev_build_publish_image
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: ${{ env.PATH_DOCKERFILE }}
+        tags: ${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ steps.buildnumber.outputs.build_number }}
+        push: true
+        build-args: |
+            build_profile=dev
+            FEED_ACCESSTOKEN=${{ secrets.NUGET_TOKEN }}
+
+    # Set the target Azure Kubernetes Service (AKS) cluster.
+    - name: 'Set k8s context'
+      uses: azure/aks-set-context@v1
+      with:
+        creds: ${{ secrets.SBX_AZURE_CREDENTIALS }}
+        cluster-name: ${{ env.CLUSTER_NAME }}
+        resource-group: ${{ env.CLUSTER_RG }}
+      id: login
+
+  # Create image pull secret for ACR
+    - name: 'Create imagePullSecret'
+      uses: azure/k8s-create-secret@v1
+      with:
+          namespace: ${{ env.NAMESPACE }}
+          container-registry-url: ${{ env.CONTAINER_REGISTRY }}
+          container-registry-username: ${{ env.SBX--ACR--USERNAME }}
+          container-registry-password: ${{ env.SBX--ACR--PASSWORD }}
+          secret-name: rsisbxnxgimgauth
+
+    # Deploy app to AKS with k8s manifests
+    - name: 'Deploy to AKS'
+      uses: azure/k8s-deploy@v1
+      with:
+        manifests: |
+          ${{ github.workspace }}/${{ inputs.manifest_file_path }}
+        images: ${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ steps.buildnumber.outputs.build_number }}
+        imagepullsecrets: rsisbxnxgimgauth
+        namespace: ${{ env.NAMESPACE }}

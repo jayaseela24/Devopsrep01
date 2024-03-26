@@ -1,0 +1,307 @@
+name: START-CNV
+run-name: Execute Ingestor - ${{ inputs.environment }}
+
+# Controls when the workflow will run
+on:
+  # push:
+  #   branches:
+  #     - deploy-once
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: 'Source environment to deploy the service(s)'
+        required: true
+        default: ''
+        options:
+          - DEV
+          - QA
+          - REF
+          - STG
+          - STL
+      clear_queues:
+        type: boolean
+        description: Clear Conversion Queues
+        required: true
+        default: true
+      execute_ingestor:
+        type: boolean
+        description: Execute Conversion-Ingestor
+        required: true
+        default: true
+
+env:
+  ENVIRONMENT: ${{ inputs.environment }}
+  GITHUB_TOKEN: ${{secrets.PAT}}
+
+# A workflow run is made up of one or more jobs
+jobs:
+
+  clear-queues-DEV:
+    if: (github.actor == 'aarizmendi' || github.actor == 'jturmel69' || github.actor == 'sjlutz-rsi' ) && inputs.environment == 'DEV' && inputs.clear_queues == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: deploy-once
+          repository: revenue-solutions-inc/devops-cicd
+          token: ${{ secrets.PAT }}
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install Dependencies
+        run: pip install -r ./Scripts/requirements_clear_queues.txt
+        shell: bash 
+      - name: Pass Inputs to Shell
+        run: |
+          echo "GITHUBTOKEN=${{ env.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "SERVICEBUS_CONNECTION_STR=${{ secrets.SERVICEBUS_CONNECTION_STR_DEV }}" >> $GITHUB_ENV
+        shell: bash 
+      - name: clear queues
+        run: python ./Scripts/clear_queues.py
+        shell: bash
+
+
+  execute-ingestor-DEV:
+    needs: clear-queues-DEV
+    if: always() &&  (github.actor == 'aarizmendi' || github.actor == 'jturmel69' || github.actor == 'sjlutz-rsi') && (needs.clear-queues-DEV.result == 'skipped' || needs.clear-queues-DEV.result == 'success') && (inputs.environment == 'DEV' && inputs.execute_ingestor == true)
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          KUBE_CONFIG: ${{ secrets.KUBECONFIG }}
+        run: |
+          az cloud set --name AzureCloud
+          echo "/usr/local/bin/kubectl" >> $GITHUB_PATH
+          if [ ! -d "$HOME/.kube" ]; then
+              mkdir -p $HOME/.kube
+          fi
+          echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
+          if [ ! -f "$HOME/.kube/config" ]; then
+              if [ ! -z "${KUBE_CONFIG}" ]; then
+                  echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
+
+                  if [ ! -z "${KUBE_CONTEXT}" ]; then
+                      kubectl config use-context $KUBE_CONTEXT
+                  fi
+              fi
+          fi
+          kubectl get pods -l app=conversions-analyzer
+          kubectl get pods -l app=conversions-ingestor
+          kubectl scale deployment conversions-ingestor-deploy --replicas=0
+          kubectl scale deployment conversions-ingestor-deploy --replicas=1
+
+  clear-queues-QA:
+    if: (github.actor == 'aarizmendi' || github.actor == 'jturmel69' || github.actor == 'sjlutz-rsi' ) && inputs.environment == 'QA' && inputs.clear_queues == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: deploy-once
+          repository: revenue-solutions-inc/devops-cicd
+          token: ${{ secrets.PAT }}
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install Dependencies
+        run: pip install -r ./Scripts/requirements_clear_queues.txt
+        shell: bash 
+      - name: Pass Inputs to Shell
+        run: |
+          echo "GITHUBTOKEN=${{ env.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "SERVICEBUS_CONNECTION_STR=${{ secrets.SERVICEBUS_CONNECTION_STR_QA }}" >> $GITHUB_ENV
+        shell: bash 
+      - name: clear queues
+        run: python ./Scripts/clear_queues.py
+        shell: bash
+
+  execute-ingestor-QA:
+    needs: clear-queues-QA
+    if: always() && (needs.clear-queues-QA.result == 'skipped' || needs.clear-queues-QA.result == 'success') && (inputs.environment == 'QA' && inputs.execute_ingestor == true)
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          KUBE_CONFIG: ${{ secrets.KUBECONFIG_QA }}
+        run: |
+          az cloud set --name AzureCloud
+          echo "/usr/local/bin/kubectl" >> $GITHUB_PATH
+          
+          if [ ! -d "$HOME/.kube" ]; then
+              mkdir -p $HOME/.kube
+          fi
+          echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
+          if [ ! -f "$HOME/.kube/config" ]; then
+              if [ ! -z "${KUBE_CONFIG}" ]; then
+                  echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
+
+                  if [ ! -z "${KUBE_CONTEXT}" ]; then
+                      kubectl config use-context $KUBE_CONTEXT
+                  fi
+              fi
+          fi
+          kubectl get pods -l app=conversions-analyzer-qa
+          kubectl get pods -l app=conversions-ingestor-qa
+          kubectl scale deployment conversions-ingestor-qa-deploy --replicas=0
+          kubectl scale deployment conversions-ingestor-qa-deploy --replicas=1
+
+  clear-queues-REF:
+    if: (github.actor == 'aarizmendi' || github.actor == 'jturmel69' || github.actor == 'sjlutz-rsi' ) && inputs.environment == 'REF' && inputs.clear_queues == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: deploy-once
+          repository: revenue-solutions-inc/devops-cicd
+          token: ${{ secrets.PAT }}
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install Dependencies
+        run: pip install -r ./Scripts/requirements_clear_queues.txt
+        shell: bash 
+      - name: Pass Inputs to Shell
+        run: |
+          echo "GITHUBTOKEN=${{ env.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "SERVICEBUS_CONNECTION_STR=${{ secrets.SERVICEBUS_CONNECTION_STR_REF }}" >> $GITHUB_ENV
+        shell: bash 
+      - name: clear queues
+        run: python ./Scripts/clear_queues.py
+        shell: bash
+
+  execute-ingestor-REF:
+    needs: clear-queues-REF
+    if: always() && (needs.clear-queues-REF.result == 'skipped' || needs.clear-queues-REF.result == 'success') && (inputs.environment == 'REF' && inputs.execute_ingestor == true)
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          KUBE_CONFIG: ${{ secrets.KUBECONFIG_REF }}
+        run: |
+          az cloud set --name AzureCloud
+          echo "/usr/local/bin/kubectl" >> $GITHUB_PATH
+          if [ ! -d "$HOME/.kube" ]; then
+              mkdir -p $HOME/.kube
+          fi
+          echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
+          if [ ! -f "$HOME/.kube/config" ]; then
+              if [ ! -z "${KUBE_CONFIG}" ]; then
+                  echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
+
+                  if [ ! -z "${KUBE_CONTEXT}" ]; then
+                      kubectl config use-context $KUBE_CONTEXT
+                  fi
+              fi
+          fi
+          kubectl get pods -l app=conversions-analyzer-ref
+          kubectl get pods -l app=conversions-ingestor-ref
+          kubectl scale deployment conversions-ingestor-ref-deploy --replicas=0
+          kubectl scale deployment conversions-ingestor-ref-deploy --replicas=1
+
+  clear-queues-STG:
+    if: (github.actor == 'aarizmendi' || github.actor == 'jturmel69' || github.actor == 'sjlutz-rsi' ) && inputs.environment == 'STG' && inputs.clear_queues == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: deploy-once
+          repository: revenue-solutions-inc/devops-cicd
+          token: ${{ secrets.PAT }}
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install Dependencies
+        run: pip install -r ./Scripts/requirements_clear_queues.txt
+        shell: bash 
+      - name: Pass Inputs to Shell
+        run: |
+          echo "GITHUBTOKEN=${{ env.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "SERVICEBUS_CONNECTION_STR=${{ secrets.SERVICEBUS_CONNECTION_STR_STG }}" >> $GITHUB_ENV
+        shell: bash 
+      - name: clear queues
+        run: python ./Scripts/clear_queues.py
+        shell: bash
+
+  execute-ingestor-STG:
+    needs: clear-queues-STG
+    if: always() && (needs.clear-queues-STG.result == 'skipped' || needs.clear-queues-STG.result == 'success') && (inputs.environment == 'STG' && inputs.execute_ingestor == true)
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          KUBE_CONFIG: ${{ secrets.KUBECONFIG_STG }}
+        run: |
+          az cloud set --name AzureUSGovernment
+          echo "/usr/local/bin/kubectl" >> $GITHUB_PATH
+          if [ ! -d "$HOME/.kube" ]; then
+              mkdir -p $HOME/.kube
+          fi
+          echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
+          if [ ! -f "$HOME/.kube/config" ]; then
+              if [ ! -z "${KUBE_CONFIG}" ]; then
+                  echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
+
+                  if [ ! -z "${KUBE_CONTEXT}" ]; then
+                      kubectl config use-context $KUBE_CONTEXT
+                  fi
+              fi
+          fi
+          kubectl get pods -l app=conversions-analyzer-stg -n app
+          kubectl get pods -l app=conversions-ingestor-stg -n app
+          kubectl scale deployment conversions-ingestor-stg-deploy -n app --replicas=0
+          kubectl scale deployment conversions-ingestor-stg-deploy -n app --replicas=1
+
+
+  clear-queues-STL:
+    if: (github.actor == 'aarizmendi' || github.actor == 'jturmel69' || github.actor == 'sjlutz-rsi' ) && inputs.environment == 'STL' && inputs.clear_queues == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: deploy-once
+          repository: revenue-solutions-inc/devops-cicd
+          token: ${{ secrets.PAT }}
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install Dependencies
+        run: pip install -r ./Scripts/requirements_clear_queues.txt
+        shell: bash 
+      - name: Pass Inputs to Shell
+        run: |
+          echo "GITHUBTOKEN=${{ env.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "SERVICEBUS_CONNECTION_STR=${{ secrets.SERVICEBUS_CONNECTION_STR_STL }}" >> $GITHUB_ENV
+        shell: bash 
+      - name: clear queues
+        run: python ./Scripts/clear_queues.py
+        shell: bash
+
+  execute-ingestor-STL:
+    needs: clear-queues-STL
+    if: always() && (needs.clear-queues-STL.result == 'skipped' || needs.clear-queues-STL.result == 'success') && (inputs.environment == 'STL' && inputs.execute_ingestor == true)
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          KUBE_CONFIG: ${{ secrets.KUBECONFIG_STL }}
+        run: |
+          az cloud set --name AzureUSGovernment
+          echo "/usr/local/bin/kubectl" >> $GITHUB_PATH
+          if [ ! -d "$HOME/.kube" ]; then
+              mkdir -p $HOME/.kube
+          fi
+          echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
+          if [ ! -f "$HOME/.kube/config" ]; then
+              if [ ! -z "${KUBE_CONFIG}" ]; then
+                  echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
+
+                  if [ ! -z "${KUBE_CONTEXT}" ]; then
+                      kubectl config use-context $KUBE_CONTEXT
+                  fi
+              fi
+          fi
+          kubectl get pods -l app=conversions-analyzer-stl -n app
+          kubectl get pods -l app=conversions-ingestor-stl -n app
+          kubectl scale deployment conversions-ingestor-stl-deploy -n app --replicas=0
+          kubectl scale deployment conversions-ingestor-stl-deploy -n app --replicas=1

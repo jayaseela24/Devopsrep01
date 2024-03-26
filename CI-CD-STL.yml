@@ -1,0 +1,155 @@
+run-name: CI-CD-STL
+
+# Controls when the workflow will run
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        type: string
+        required: true
+      dockerfile_path:
+        type: string
+        required: true
+      image_name:
+        type: string
+        required: true
+      keyvault_name:
+        type: string
+        required: true
+      manifest_file_path:
+        type: string
+        required: true
+      build_number:
+        type: string
+        required: true
+      repo_name:
+        type: string
+        required: true
+      ghcr_path:
+        type: string
+        required: true
+      registry:
+        type: string
+        required: true
+  workflow_dispatch:
+
+  # Environment variables available to all jobs and steps in this workflow
+env:
+  CONTAINER_REGISTRY: va01stlmgt.azurecr.us
+  PATH_DOCKERFILE: ${{ inputs.dockerfile_path }}
+  IMAGE_NAME: ${{ inputs.image_name }}
+  CLUSTER_RG: VA-01-STL-AKS
+  CLUSTER_NAME: VA-01-STL-AKS
+  NAMESPACE: app
+
+# A workflow run is made up of one or more jobs
+jobs:
+  push-deploy:
+    runs-on: stl-runner
+    permissions:
+      actions: write
+      checks: write
+      contents: write
+      deployments: write
+      id-token: write
+      issues: write
+      discussions: read
+      packages: read
+      pages: read
+      pull-requests: read
+      repository-projects: write
+      security-events: read
+      statuses: read
+    environment:
+      name: STL
+      url: 'https://${{ inputs.repo_name }}.stl.revxplatform.com/swagger/index.html'
+
+    steps:
+    - name: Clean up working directory
+      run: |
+        sudo rm -fr $GITHUB_WORKSPACE && mkdir $GITHUB_WORKSPACE
+    
+    - name: Download Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ inputs.repo_name }}-${{ inputs.build_number }}
+
+    - name: Expanding Artifact
+      run: |
+        ls -ltr
+        ls -la
+        pwd
+        
+    - name: Expanding Artifact
+      run: |
+        chmod 777 ${{ inputs.repo_name }}-${{ inputs.build_number }}.tar
+        mkdir ${{ inputs.repo_name }}-code
+        chmod 777 ${{ inputs.repo_name }}-code
+        tar -xvf ${{ inputs.repo_name }}-${{ inputs.build_number }}.tar -C ${{ inputs.repo_name }}-code
+
+    - name: 'Login to GitHub Container Registry'
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{github.actor}}
+        password: ${{secrets.GITHUB_TOKEN}}
+
+    - uses: Azure/login@v1
+      with:
+        creds: ${{ secrets.STL_AZURE_CREDENTIALS }}
+        environment: 'AzureUSGovernment'
+
+    - uses: Azure/get-keyvault-secrets@v1
+      with:
+        keyvault: ${{ inputs.keyvault_name }}
+        secrets: 'STL--ACR--USERNAME,STL--ACR--PASSWORD'
+
+      # Connect to Azure Container registry (ACR)
+    - uses: azure/docker-login@v1
+      with:
+        login-server: ${{ env.CONTAINER_REGISTRY }}
+        username: ${{ env.STL--ACR--USERNAME }}
+        password: ${{ env.STL--ACR--PASSWORD }}
+
+    - name: Push to ACR
+      run: |
+        az account set --subscription f3099cf8-76f4-4e20-b77f-ce2440da287d
+        az acr import --name ${{ env.CONTAINER_REGISTRY }}/${{ inputs.image_name }} --source ${{ inputs.registry }}/${{inputs.ghcr_path}}:v${{inputs.build_number}} --image ${{ inputs.image_name }}:v${{ inputs.build_number }} --username nrehman-rsi --password ${{ secrets.GITHUB_TOKEN }}
+
+    # Set the target Azure Kubernetes Service (AKS) cluster.
+    - name: 'Set k8s context'
+      uses: azure/aks-set-context@v1
+      with:
+        creds: ${{ secrets.STL_AZURE_CREDENTIALS }}
+        cluster-name: ${{ env.CLUSTER_NAME }}
+        resource-group: ${{ env.CLUSTER_RG }}
+      id: login
+
+  # Create image pull secret for ACR
+    - name: 'Create imagePullSecret'
+      uses: azure/k8s-create-secret@v1
+      with:
+          namespace: ${{ env.NAMESPACE }}
+          container-registry-url: ${{ env.CONTAINER_REGISTRY }}
+          container-registry-username: ${{ env.STL--ACR--USERNAME }}
+          container-registry-password: ${{ env.STL--ACR--PASSWORD }}
+          secret-name: rsistlnxgimgauth
+
+    # Deploy app to AKS with k8s manifests
+    - name: 'Deploy to AKS ${{ inputs.image_name }}:v${{ inputs.build_number }}'
+      uses: azure/k8s-deploy@v1
+      with:
+        manifests: |
+          ${{ github.workspace }}/${{ inputs.repo_name }}-code/${{ inputs.manifest_file_path }}
+        images: ${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ inputs.build_number }}
+        imagepullsecrets: rsistlnxgimgauth
+        namespace: ${{ env.NAMESPACE }}
+
+    - name: Update the confluence
+      uses: revenue-solutions-inc/confluence-rsi@v1
+      with:
+        service: ${{ inputs.project_name }}
+        env: "STL"
+        version: ${{ inputs.build_number }}
+        token: ${{ secrets.CONFLUENCE_TOKEN }}
+        connectionstring: ${{ secrets.COSMOS_CONNECTION_STRING }}

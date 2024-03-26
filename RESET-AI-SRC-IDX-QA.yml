@@ -1,0 +1,40 @@
+name: RESET-AI-SRC-IDX-QA
+run-name: Reset AI Search Indexes in REF environment
+
+on:
+  # push:
+  #   branches:
+  #     - deploy-once
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+# Environment variables available to all jobs and steps in this workflow
+env:
+  AI_SEARCH_URL: https://ngenpocazcog02-qa.search.windows.net
+  AI_SEARCH_API_KEY: ${{secrets.AI_SEARCH_API_KEY_QA}}
+
+# A workflow run is made up of one or more jobs
+jobs:
+  reset-indexes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          cd ./services/search/jsons/
+          echo ------------------------------------
+          echo ngentity-tabular-entityinfo-index-1
+          echo ------------------------------------
+          echo "Search URL: $AI_SEARCH_URL"
+
+          curl --location --request DELETE "$AI_SEARCH_URL/indexes/ngentity-tabular-entityinfo-index-1?api-version=2020-06-30" --header "api-key: $AI_SEARCH_API_KEY" --header "Content-Type: application/json"
+          curl --location --request PUT "$AI_SEARCH_URL/indexes/ngentity-tabular-entityinfo-index-1?api-version=2023-10-01-Preview" --header "Content-Type: application/json" --header "api-key:$AI_SEARCH_API_KEY" --data @"index_ngentity-tabular-entityinfo-index-1.json"
+          curl --location --request POST "$AI_SEARCH_URL/indexers/ngentity-tabularentityinfo-index-1-sql-indexer-1/reset?api-version=2020-06-30" --header "api-key:$AI_SEARCH_API_KEY" --header "Content-Type: application/json" -d ""
+          
+          echo ------------------------------------
+          echo ngentity-tabular-accountinfo-index-1
+          echo ------------------------------------
+
+          curl --location --request DELETE "$AI_SEARCH_URL/indexes/ngentity-tabular-accountinfo-index-1?api-version=2020-06-30" --header "api-key: $AI_SEARCH_API_KEY" --header "Content-Type: application/json"
+          curl --location --request PUT "$AI_SEARCH_URL/indexes/ngentity-tabular-accountinfo-index-1?api-version=2023-10-01-Preview" --header "Content-Type: application/json" --header "api-key:$AI_SEARCH_API_KEY" --data @"index_ngentity-tabular-accountinfo-index-1.json"
+          curl --location --request POST "$AI_SEARCH_URL/indexers/ngentity-tabularaccountinfo-index-1-sql-indexer-1/reset?api-version=2020-06-30" --header "api-key:$AI_SEARCH_API_KEY" --header "Content-Type: application/json" -d ""

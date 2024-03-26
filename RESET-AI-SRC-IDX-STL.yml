@@ -1,0 +1,26 @@
+name: RESET-AI-SRC-IDX-STL
+run-name: Reset AI Search Indexes in STL environment
+
+on:
+  # push:
+  #   branches:
+  #     - deploy-once
+  workflow_dispatch:
+
+# Environment variables available to all jobs and steps in this workflow
+
+# A workflow run is made up of one or more jobs
+jobs:
+  reset-indexes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login to Azure Cloud
+        uses: Azure/login@v1
+        with:
+          creds: ${{ secrets.STL_AZURE_CREDENTIALS }}
+          environment: 'AzureUSGovernment'
+      - run: |
+          cd .\services\search\
+          .\reset_indexes.ps1 -environment STL -encription true
+        shell: pwsh
