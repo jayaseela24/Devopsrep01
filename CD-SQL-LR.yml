@@ -54,6 +54,9 @@ jobs:
       varDebug: 1
       varCommit: 1
     steps:
+      - name: Clean up working directory
+        run: |
+          sudo rm -fr $GITHUB_WORKSPACE && mkdir $GITHUB_WORKSPACE
       - uses: actions/checkout@main
       - name: "Login to Azure Cloud"
         if: ${{ env.AZURE_CLOUD == 'azurecloud' }}
