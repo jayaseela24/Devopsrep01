@@ -1,0 +1,21 @@
+{
+  "name": "ngforms-formdata-index-1-cosmos-indexer-1",
+  "description": "",
+  "dataSourceName": "formsmongodbconn",
+  "skillsetName": null,
+  "targetIndexName": "ngforms-formdata-index-1",
+  "disabled": null,
+  "schedule": null,
+  "parameters": {
+    "batchSize": 10,
+    "maxFailedItems": null,
+    "maxFailedItemsPerBatch": null,
+    "base64EncodeKeys": false,
+    "configuration": {
+      "queryTimeout": "00:20:00"
+    }
+  },
+  "fieldMappings": [],
+  "outputFieldMappings": [],
+  "encryptionKey": null
+}
