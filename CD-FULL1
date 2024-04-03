@@ -1,0 +1,527 @@
+#Disable smoke test
+name: CD-FULL
+run-name: Single click deployment workflow
+
+# Controls when the workflow will run
+on:
+  # push:
+  #   branches:
+  #     - deploy-once
+
+  workflow_dispatch:
+    inputs:
+      deployment_type:
+        type: choice
+        description: 'Deployment Type'
+        required: true
+        default: 'Partial-Deployment'
+        options:
+          - Full-Deployment
+          - Partial-Deployment
+      services:
+        type: string
+        description: 'services list comma separated'
+        required: true
+        default: "RoleManagementService,TenantManagementService,RevenueAccountingService"
+      source_environment:
+        type: choice
+        description: 'Source environment to deploy the service(s)'
+        required: true
+        default: 'DEV'
+        options:
+          - DEV
+          - QA
+          - REF
+          - STG
+          - VA-PRD
+          - TX-PRD
+          - DEV-GOV
+          - QA-GOV
+          - STL
+      target_environment:
+        type: choice
+        description: 'Target environment to deploy the service(s)'
+        required: true
+        default: 'DEV'
+        options:
+          - DEV
+          - QA
+          - REF
+          - STG
+          - VA-PRD
+          - TX-PRD
+          - DEV-GOV
+          - QA-GOV
+          - STL
+      ticket_url:
+        type: string
+        description: 'REVXDO JIRA deployment request URL'
+        required: false
+        default: ""
+      send_emails:
+        type: boolean
+        description: Send Deployment Emails
+        required: true
+        default: true
+      override_same_version:
+        type: boolean
+        description: Force overriding the same version
+        required: true
+        default: false
+      execute_sql_scripts:
+        type: boolean
+        description: Execute SQL Scripts
+        required: true
+        default: true
+      execute_aks_deployment:
+        type: boolean
+        description: Execute AKS Deployment
+        required: true
+        default: true
+
+env:
+  DEPLOYMENT_TYPE: ${{ inputs.deployment_type }}
+  SERVICES: ${{ inputs.services }}
+  SOURCE_ENVIRONMENT: ${{ inputs.source_environment }}
+  TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
+  TICKET_URL: ${{ inputs.ticket_url }}
+  GITHUB_TOKEN: ${{secrets.NUGET_TOKEN}}
+  EMAIL_RECIPIENTS: "aarizmendi@rsimail.com,jvanarasi@rsimail.com,nrehman@rsimail.com,revx-status-ref@rsimail.com"
+  OVERRIDE_SAME_VERSION: ${{ inputs.override_same_version }}
+
+# A workflow run is made up of one or more jobs
+jobs:
+
+  # execute-smoke-test:
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     uuid: ${{ steps.uuid.outputs.uuid }}
+  #     test_result: ${{ steps.get_smoke_test_result.outputs.test_result }}
+  #   steps:
+  #     - name: Get uuid
+  #       id: uuid
+  #       run: | 
+  #           echo "::set-output name=uuid::$(uuidgen)"
+  #     - run: |
+  #         echo 'Dispatching pre-deployment smoke test'
+  #         curl -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.NUGET_TOKEN }}" https://api.github.com/repos/revenue-solutions-inc/RevX-Katalon/actions/workflows/ci-cd-smoke-autodeployment.yml/dispatches -d '{"ref":"main", "inputs": {"id":"${{ steps.uuid.outputs.uuid }}"}}'
+      
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         ref: deploy-once
+  #         repository: revenue-solutions-inc/devops-cicd
+  #         token: ${{ secrets.NUGET_TOKEN }}
+  #     - name: Install Python
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: '3.10'
+  #     - name: Install Dependencies
+  #       run: pip install -r ./Scripts/requirements_get_workflow_status.txt
+  #       shell: bash 
+  #     - name: Pass Inputs to Shell
+  #       run: |
+  #         echo "GITHUBTOKEN=${{ env.GITHUB_TOKEN }}" >> $GITHUB_ENV
+  #         echo "SMOKETEST_RUN_ID=${{ steps.uuid.outputs.uuid }}" >> $GITHUB_ENV
+  #       shell: bash 
+  #     - name: Get Smoke Test Run result
+  #       id: get_smoke_test_result
+  #       run: python ./Scripts/get_workflow_status.py
+  #       shell: bash
+  #     - run: |
+  #         echo "Test Result ${{ steps.get_smoke_test_result.outputs.test_result }}"
+
+  
+
+  # deployment-cancelled:
+  #   if: needs.execute-smoke-test.outputs.test_result != 'success'
+  #   needs: execute-smoke-test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - run: |
+  #         echo 'Deployment cancelled due Smoke Test failed'
+
+  get-runner:
+    # needs: send-deployment-starting-email
+    runs-on: ubuntu-latest
+    outputs:
+      runner: ${{ steps.get-runner.outputs.runner }}
+      cloud: ${{ steps.get-runner.outputs.cloud }}
+      distro_email: ${{ steps.get-runner.outputs.distro_email }}
+    steps:
+      - id: get-runner
+        run: |
+          if [[ $TARGET_ENVIRONMENT = "DEV" ]]; then
+            echo "runner=dev-vm" >> $GITHUB_OUTPUT
+            echo "cloud=azurecloud" >> $GITHUB_OUTPUT
+            echo "distro_email=aarizmendi@rsimail.com" >> $GITHUB_OUTPUT
+          elif [[ $TARGET_ENVIRONMENT = "QA" ]]; then
+            echo "runner=qa-vm" >> $GITHUB_OUTPUT
+            echo "cloud=azurecloud" >> $GITHUB_OUTPUT
+            echo "distro_email=devops@rsimail.com" >> $GITHUB_OUTPUT
+          elif [[ $TARGET_ENVIRONMENT = "QA-GOV" ]]; then
+            echo "runner=qagov-runner" >> $GITHUB_OUTPUT
+            echo "cloud=AzureUSGovernment" >> $GITHUB_OUTPUT
+            echo "distro_email=devops@rsimail.com" >> $GITHUB_OUTPUT
+          elif [[ $TARGET_ENVIRONMENT = "REF" ]]; then
+            echo "runner=rfsb-vm" >> $GITHUB_OUTPUT
+            echo "cloud=azurecloud" >> $GITHUB_OUTPUT
+            echo "distro_email=revx-status-ref@rsimail.com,devops@rsimail.com" >> $GITHUB_OUTPUT
+          elif [[ $TARGET_ENVIRONMENT = "STG" ]]; then
+            echo "runner=gov-runner" >> $GITHUB_OUTPUT
+            echo "cloud=AzureUSGovernment" >> $GITHUB_OUTPUT
+            echo "distro_email=revx-status-staging@rsimail.com,devops@rsimail.com" >> $GITHUB_OUTPUT
+          elif [[ $TARGET_ENVIRONMENT = "STL" ]]; then
+            echo "runner=gov-runner" >> $GITHUB_OUTPUT
+            echo "cloud=AzureUSGovernment" >> $GITHUB_OUTPUT
+          elif [[ $TARGET_ENVIRONMENT = "VA-PRD" ]]; then
+            echo "runner=gov-runner" >> $GITHUB_OUTPUT
+            echo "cloud=AzureUSGovernment" >> $GITHUB_OUTPUT
+            echo "distro_email=revx-status-prod@rsimail.com,devops@rsimail.com" >> $GITHUB_OUTPUT
+          elif [[ $TARGET_ENVIRONMENT = "TX-PRD" ]]; then
+            echo "runner=gov-runner" >> $GITHUB_OUTPUT
+            echo "cloud=AzureUSGovernment" >> $GITHUB_OUTPUT
+            echo "distro_email=devops@rsimail.com" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+      - run: |
+          echo "Runner set: ${{ steps.get-runner.outputs.runner}}"
+
+  send-deployment-starting-email:
+    # if: needs.execute-smoke-test.outputs.test_result == 'success'
+    needs: get-runner
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo 'send deployment starting email'
+      - name: Send notification mail
+        if: inputs.send_emails == true
+        uses: revenue-solutions-inc/NotificationAction/deployment_email@v1.0.4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{secrets.SECRETS_MAIL_USERNAME}}
+          password: ${{secrets.SECRETS_MAIL_PASSWORD}}
+          deployment_type: ${{ env.DEPLOYMENT_TYPE }}
+          deployment_status: 'Starting'
+          services: ${{ env.SERVICES }}
+          ticket_url: ${{ env.TICKET_URL }}
+          environment: ${{ env.TARGET_ENVIRONMENT }}
+          email_recipients: ${{ needs.get-runner.outputs.distro_email }}
+
+  get-list-services-to-deploy:
+    needs: send-deployment-starting-email
+    runs-on: ubuntu-latest
+    outputs:
+      services_to_deploy_json: ${{ steps.build-version-numbers.outputs.services_deploy }}
+    steps:
+      - name: Get the list of the build versions
+        uses: revenue-solutions-inc/confluence-rsi@fix-single-deploy
+        id: build-version-numbers
+        with:
+          source: ${{ env.SOURCE_ENVIRONMENT }}
+          target: ${{ env.TARGET_ENVIRONMENT }}
+          services: ${{ env.SERVICES }}
+          token: ${{ secrets.CONFLUENCE_TOKEN }}
+
+  get-deployment-data:
+    needs: [get-runner,get-list-services-to-deploy]
+    runs-on: ubuntu-latest
+    outputs:
+      deployment_data_array: ${{ steps.get_deployment_data.outputs.deployment_data_array }}
+      sql_services_array: ${{ steps.get_deployment_data.outputs.sql_services_array }}
+      deploy_aks: ${{toJson(fromJson(steps.get_deployment_data.outputs.deployment_data_array).AKS) != '[]' }}
+      deploy_dotnet_fapp: ${{toJson(fromJson(steps.get_deployment_data.outputs.deployment_data_array).function_apps_dotnet) != '[]' }}
+      deploy_python_fapp: ${{toJson(fromJson(steps.get_deployment_data.outputs.deployment_data_array).function_apps_python) != '[]' }}
+      deploy_sink_obj: ${{toJson(fromJson(steps.get_deployment_data.outputs.deployment_data_array).sink_object) != '[]' }}
+      deploy_spa_client_side: ${{toJson(fromJson(steps.get_deployment_data.outputs.deployment_data_array).spa_client_side) != '[]' }}
+      deploy_spa_server_side: ${{toJson(fromJson(steps.get_deployment_data.outputs.deployment_data_array).spa_server_side) != '[]' }}
+      deploy_nosql_migrations: ${{toJson(fromJson(steps.get_deployment_data.outputs.deployment_data_array).nosql_migrations) != '[]' }}
+    env:
+      SERVICES: ${{toJson(fromJson(needs.get-list-services-to-deploy.outputs.services_to_deploy_json).services_to_deploy)}}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: deploy-once
+          repository: revenue-solutions-inc/devops-cicd
+          token: ${{ secrets.NUGET_TOKEN }}
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Pass Inputs to Shell
+        run: |
+          echo "ENVIRONMENT=${{ env.TARGET_ENVIRONMENT }}" >> $GITHUB_ENV
+          echo "OVERRIDE_SAME_VERSION=${{ env.OVERRIDE_SAME_VERSION }}" >> $GITHUB_ENV
+          
+        shell: bash 
+      - name: Get Deployment data
+        id: get_deployment_data
+        run: python ./Scripts/get_deployment_data.py
+        shell: bash
+      - run: |
+          echo "Deployment data: ${{ steps.get_deployment_data.outputs.deployment_data_array }}"
+          echo "Services with SQL Scripts: ${{ steps.get_deployment_data.outputs.sql_services_array }}"
+
+  sql-execution:
+    if: toJson(fromJson(needs.get-deployment-data.outputs.sql_services_array)) != '[]' && inputs.execute_sql_scripts == true
+    needs: [get-runner,get-deployment-data,get-list-services-to-deploy]
+    runs-on:  ${{needs.get-runner.outputs.runner}}
+    strategy:
+      fail-fast: false
+      matrix:
+        services: ${{fromJson(needs.get-deployment-data.outputs.sql_services_array)}}
+    env:
+      service_name: ${{ matrix.services.service_name}}
+      service_version: ${{ matrix.services.target_version}}
+      environment: ${{fromJson(needs.get-list-services-to-deploy.outputs.services_to_deploy_json).target_environment}}
+      deploy_migrations: "true"
+      deploy_fd: "true"
+    steps:
+      - name: Clean up working directory
+        uses: AutoModality/action-clean@v1
+
+      - uses: actions/checkout@v2
+        with:
+          ref: deploy-once
+          repository: revenue-solutions-inc/devops-cicd
+          token: ${{ secrets.NUGET_TOKEN }}
+      - uses: ./Actions/revx-services-deployment
+        name: Call action
+        with:
+          github_token: ${{secrets.NUGET_TOKEN}}
+          debug: 1
+          commit: 1
+          service: ${{ env.service_name }}
+          version: ${{ env.service_version }}
+          environment: ${{ env.environment }}
+          deploy_migrations: ${{ env.deploy_migrations }}
+          deploy_fd: ${{ env.deploy_fd }}
+          cloud: ${{ needs.get-runner.outputs.cloud }}
+
+  aks-deployment:
+    permissions:
+      actions: write
+      checks: write
+      contents: write
+      deployments: write
+      id-token: write
+      issues: write
+      discussions: read
+      packages: read
+      pages: read
+      pull-requests: read
+      repository-projects: write
+      security-events: read
+      statuses: read
+    needs: [get-runner,get-list-services-to-deploy,sql-execution,get-deployment-data]
+    # if: inputs.execute_aks_deployment == true && needs.get-deployment-data.outputs.deploy_aks == 'true'
+    if:  always() && (needs.sql-execution.result == 'skipped' || needs.sql-execution.result == 'success') && needs.get-deployment-data.outputs.deploy_aks == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        services: ${{fromJson(needs.get-deployment-data.outputs.deployment_data_array).AKS}}
+    uses: revenue-solutions-inc/DevOps-CICD/.github/workflows/CD-AKS-V2.yml@deploy-once
+    with:
+      runner_name: ${{ needs.get-runner.outputs.runner }}
+      service_name: ${{ matrix.services.service_name}}
+      service_version: ${{ matrix.services.target_version}}
+      environment: ${{fromJson(needs.get-list-services-to-deploy.outputs.services_to_deploy_json).target_environment}}
+      repository_name: ${{ matrix.services.repository_name}}
+      repository_path: ${{ matrix.services.repository_path}}
+      azure_service_principal: ${{ matrix.services.azure_service_principal}}
+      azure_cloud: ${{ matrix.services.azure_cloud}}
+      keyvault_name: ${{ matrix.services.keyvault_name}}
+      container_registry: ${{ matrix.services.container_registry}}
+      image_name: ${{ matrix.services.image_name}}
+      cluster_name: ${{ matrix.services.cluster_name}}
+      cluster_resource_group: ${{ matrix.services.cluster_resource_group}}
+      cluster_namespace: ${{ matrix.services.cluster_namespace}}
+      aks_secret_name: ${{ matrix.services.aks_secret_name}}
+      manifest_file: ${{ matrix.services.manifest_file}}
+      project_name: ${{ matrix.services.project_name}}
+      acr_secret_prefix: ${{ matrix.services.acr_secret_prefix}}
+    secrets: inherit
+
+  sink-object-app-deployment:
+    if: always() && (needs.aks-deployment.result == 'skipped' || needs.aks-deployment.result == 'success') && needs.get-deployment-data.outputs.deploy_sink_obj == 'true'
+    needs: [get-runner,sql-execution,aks-deployment,get-deployment-data]
+    strategy:
+      fail-fast: false
+      matrix:
+        objects: ${{fromJson(needs.get-deployment-data.outputs.deployment_data_array).sink_object}}
+    runs-on: ${{ needs.get-runner.outputs.runner }}
+    steps:
+      - run: |
+          curl -X GET "${{ matrix.objects.function_app_endpoint }}?code=${{secrets[matrix.objects.code_secret_name]}}&url=${{matrix.objects.swagger_endpoint}}"
+
+
+  function-app-dotnet-deployment:
+    needs: [get-runner,sql-execution,get-deployment-data]
+    if: always() && (needs.sql-execution.result == 'skipped' || needs.sql-execution.result == 'success') && needs.get-deployment-data.outputs.deploy_dotnet_fapp == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        services: ${{fromJson(needs.get-deployment-data.outputs.deployment_data_array).function_apps_dotnet}}
+    uses: revenue-solutions-inc/DevOps-CICD/.github/workflows/CI-CD-FA-V2.yml@deploy-once
+    with:
+      # runner_name: ${{ needs.get-runner.outputs.runner }}
+      runner_name: ubuntu-latest
+      azure_publish_profile: ${{ matrix.services.azure_publish_profile}}
+      function_name: ${{ matrix.services.function_name}}
+      function_package_path: ${{ matrix.services.function_package_path}}
+      tag_version: ${{ matrix.services.target_version}}
+      repository_name: ${{ matrix.services.repository_name}}
+    secrets: inherit
+
+  function-app-python-deployment:
+    needs: [get-runner,sql-execution,get-deployment-data]
+    if: always() && (needs.sql-execution.result == 'skipped' || needs.sql-execution.result == 'success') && needs.get-deployment-data.outputs.deploy_python_fapp == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        services: ${{fromJson(needs.get-deployment-data.outputs.deployment_data_array).function_apps_python}}
+    uses: revenue-solutions-inc/DevOps-CICD/.github/workflows/CI-CD-FA-PY-V2.yml@deploy-once
+    with:
+      runner_name: ${{ needs.get-runner.outputs.runner }}
+      azure_publish_profile: ${{ matrix.services.azure_publish_profile}}
+      function_name: ${{ matrix.services.function_name}}
+      function_package_path: ${{ matrix.services.function_package_path}}
+      tag_version: ${{ matrix.services.target_version}}
+      repository_name: ${{ matrix.services.repository_name}}
+    secrets: inherit
+
+  
+  spa-client-side-deployment:
+    needs: [get-runner,sql-execution,get-deployment-data]
+    if: always() && (needs.sql-execution.result == 'skipped' || needs.sql-execution.result == 'success') && needs.get-deployment-data.outputs.deploy_spa_client_side == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        services: ${{fromJson(needs.get-deployment-data.outputs.deployment_data_array).spa_client_side}}
+    uses: revenue-solutions-inc/DevOps-CICD/.github/workflows/CD-SPA-AS-V2.yml@deploy-once
+    with:
+      project_name: ${{ matrix.services.project_name}}
+      app_name: ${{ matrix.services.app_name}}
+      repo_name: ${{ matrix.services.repo_name}}
+      runner_name: ${{ needs.get-runner.outputs.runner }}
+      build_number: ${{ matrix.services.target_version_number}}
+      azure_service_principal: ${{ matrix.services.azure_service_principal}}
+      environment_name: ${{ inputs.TARGET_ENVIRONMENT }}
+      env_filename: ${{ matrix.services.env_filename}}
+      version_number: ${{ matrix.services.target_version_number}}
+    secrets: inherit
+
+  spa-server-side-deployment:
+    needs: [get-runner,sql-execution,get-deployment-data]
+    if: always() && (needs.sql-execution.result == 'skipped' || needs.sql-execution.result == 'success') && needs.get-deployment-data.outputs.deploy_spa_server_side == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        services: ${{fromJson(needs.get-deployment-data.outputs.deployment_data_array).spa_server_side}}
+    uses: revenue-solutions-inc/DevOps-CICD/.github/workflows/CD-APP-V2.yml@deploy-once
+    with:
+      project_name: ${{ matrix.services.project_name}}
+      app_name: ${{ matrix.services.app_name}}
+      repo_name: ${{ matrix.services.repo_name}}
+      runner_name: ${{ needs.get-runner.outputs.runner }}
+      build_number: ${{ matrix.services.target_version_number}}
+      publish_profile: ${{ matrix.services.publish_profile}}
+      environment_name: ${{ inputs.TARGET_ENVIRONMENT }}
+      env_filename: ${{ matrix.services.env_filename}}
+    secrets: inherit
+
+  nosql-migrations-deployment:
+    needs: [get-runner,sql-execution,get-deployment-data]
+    if: always() && (needs.sql-execution.result == 'skipped' || needs.sql-execution.result == 'success') && needs.get-deployment-data.outputs.deploy_nosql_migrations == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        services: ${{fromJson(needs.get-deployment-data.outputs.deployment_data_array).nosql_migrations}}
+    uses: revenue-solutions-inc/DevOps-CICD/.github/workflows/CD-MONGO.yml@deploy-once
+    with:
+      runner_name: ${{ needs.get-runner.outputs.runner }}
+      repo_name: ${{ matrix.services.repo_name}}
+      cosmos_connectionstring: ${{ matrix.services.cosmos_connectionstring}}
+      tag_version: ${{ matrix.services.target_version}}
+    secrets: inherit
+
+
+  generate-release-notes:
+    if: always() && (needs.aks-deployment.result == 'skipped' || needs.aks-deployment.result == 'success') && (needs.sink-object-app-deployment.result == 'skipped' || needs.sink-object-app-deployment.result == 'success') && (needs.function-app-dotnet-deployment.result == 'skipped' || needs.function-app-dotnet-deployment.result == 'success') && (needs.function-app-python-deployment.result == 'skipped' || needs.function-app-python-deployment.result == 'success') && (needs.spa-client-side-deployment.result == 'skipped' || needs.spa-client-side-deployment.result == 'success') && (needs.spa-server-side-deployment.result == 'skipped' || needs.spa-server-side-deployment.result == 'success') && (needs.nosql-migrations-deployment.result == 'skipped' || needs.nosql-migrations-deployment.result == 'success')
+    needs: [get-list-services-to-deploy, function-app-dotnet-deployment, function-app-python-deployment, sink-object-app-deployment, spa-client-side-deployment, spa-server-side-deployment,nosql-migrations-deployment]
+    # needs: [get-list-services-to-deploy,get-deployment-data]
+    uses: revenue-solutions-inc/DevOps-CICD/.github/workflows/CD-release-notes.yml@deploy-once
+    with:
+      services_to_deploy: ${{needs.get-list-services-to-deploy.outputs.services_to_deploy_json}}
+      DEPLOYMENT_TYPE: ${{ inputs.deployment_type }}
+      target_environment : ${{ inputs.TARGET_ENVIRONMENT }}
+    secrets: inherit
+
+  # execute-post-deployment-smoke-test:
+  #   if: always() && needs.generate-release-notes.result == 'success'
+  #   needs: generate-release-notes
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     uuid: ${{ steps.uuid.outputs.uuid }}
+  #     test_result: ${{ steps.get_smoke_test_result.outputs.test_result }}
+  #   steps:
+  #     - name: Get uuid
+  #       id: uuid
+  #       run: | 
+  #           echo "::set-output name=uuid::$(uuidgen)"
+  #     - run: |
+  #         echo 'Dispatching pre-deployment smoke test'
+  #         curl -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.NUGET_TOKEN }}" https://api.github.com/repos/revenue-solutions-inc/RevX-Katalon/actions/workflows/ci-cd-smoke-autodeployment.yml/dispatches -d '{"ref":"main", "inputs": {"id":"${{ steps.uuid.outputs.uuid }}"}}'
+      
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         ref: deploy-once
+  #         repository: revenue-solutions-inc/devops-cicd
+  #         token: ${{ secrets.NUGET_TOKEN }}
+  #     - name: Install Python
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: '3.10'
+  #     - name: Install Dependencies
+  #       run: pip install -r ./Scripts/requirements_get_workflow_status.txt
+  #       shell: bash 
+  #     - name: Pass Inputs to Shell
+  #       run: |
+  #         echo "GITHUBTOKEN=${{ env.GITHUB_TOKEN }}" >> $GITHUB_ENV
+  #         echo "SMOKETEST_RUN_ID=${{ steps.uuid.outputs.uuid }}" >> $GITHUB_ENV
+  #       shell: bash 
+  #     - name: Get Smoke Test Run result
+  #       id: get_smoke_test_result
+  #       run: python ./Scripts/get_workflow_status.py
+  #       shell: bash
+  #     - run: |
+  #         echo "Test Result ${{ steps.get_smoke_test_result.outputs.test_result }}"
+    
+  # send-deployment-complete-email:
+  #   if: always() && needs.execute-post-deployment-smoke-test.result == 'success' && needs.execute-post-deployment-smoke-test.outputs.test_result == 'success'
+  #   needs: execute-post-deployment-smoke-test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - run: |
+  #         echo 'send deployment starting email'
+  #     - name: Send notification mail
+  #       uses: revenue-solutions-inc/NotificationAction/deployment_email@v1.0.4
+  #       with:
+  #         token: ${{ secrets.GITHUB_TOKEN }}
+  #         username: ${{secrets.SECRETS_MAIL_USERNAME}}
+  #         password: ${{secrets.SECRETS_MAIL_PASSWORD}}
+  #         deployment_type: ${{ env.DEPLOYMENT_TYPE }}
+  #         deployment_status: 'Completed'
+  #         services: ${{ env.SERVICES }}
+  #         ticket_url: ${{ env.TICKET_URL }}
+  #         environment: ${{ env.TARGET_ENVIRONMENT }}
+  #         email_recipients: ${{ env.EMAIL_RECIPIENTS }}
+
+  # post-deployment-smoke-test-failed:
+  #   if: always() && needs.execute-post-deployment-smoke-test.result == 'success' && needs.execute-post-deployment-smoke-test.outputs.test_result != 'success'
+  #   needs: execute-post-deployment-smoke-test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - run: |
+  #         echo 'Deployment cancelled due Smoke Test failed'
+
+  
